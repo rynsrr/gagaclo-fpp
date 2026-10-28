@@ -20,6 +20,10 @@ export default function PurchaseDocument({ data, hidePrintControls = false }: Pu
     uraianKeperluan,
     tanggalDiterima,
     catatan,
+    dimintaOleh,
+    diketahuiOleh,
+    disetujuiOleh,
+    diterimaOleh,
   } = data;
 
   // We want to ensure at least 8-10 rows to fill the paper naturally like the scanned form
@@ -89,9 +93,10 @@ export default function PurchaseDocument({ data, hidePrintControls = false }: Pu
         </div>
 
         {/* ================= TOP METADATA BOX ================= */}
-        <div className="w-full border border-black grid grid-cols-12 text-[11px]">
-          {/* Left Column: Jenis (Satu Baris: Jenis : Rutin / Non Rutin / Segera (Lingkar salah satu )) */}
-          <div className="col-span-8 px-2 py-1.5 border-r border-black flex items-center justify-between text-[11px]">
+        {/* Uses flex so Nomor/Tanggal has EXACT same 25% width as the Supplier column below */}
+        <div className="w-full border border-black flex text-[11px]">
+          {/* Left Column: Jenis (75% width, perfectly aligned with No + Nama Barang + Banyaknya + Taksiran) */}
+          <div className="w-[75%] px-2 py-1.5 border-r border-black flex items-center justify-between text-[11px]">
             <div className="flex items-center space-x-3 sm:space-x-4">
               <span className="italic">Jenis :</span>
               <div className="flex items-center space-x-1 tracking-wide italic">
@@ -136,8 +141,8 @@ export default function PurchaseDocument({ data, hidePrintControls = false }: Pu
             </span>
           </div>
 
-          {/* Right Column: Nomor (Kosong jika belum diisi) & Tanggal */}
-          <div className="col-span-4 p-1.5 flex flex-col justify-center text-[11px] space-y-1">
+          {/* Right Column: Nomor & Tanggal (25% width - EXACT SAME WIDTH AS SUPPLIER COLUMN) */}
+          <div className="w-[25%] p-1.5 flex flex-col justify-center text-[11px] space-y-1">
             <div className="flex items-center">
               <span className="w-16 font-semibold">Nomor</span>
               <span>: {nomor || ''}</span>
@@ -151,13 +156,13 @@ export default function PurchaseDocument({ data, hidePrintControls = false }: Pu
 
         {/* ================= MAIN TABLE ================= */}
         <div className="w-full border-x border-b border-black">
-          <table className="w-full border-collapse text-[11px]">
+          <table className="w-full table-fixed border-collapse text-[11px]">
             <thead>
               <tr className="border-b border-black text-center font-bold text-[11px] leading-tight">
-                <th className="border-r border-black p-1.5 w-[5%] font-bold">No</th>
-                <th className="border-r border-black p-1.5 w-[28%] font-bold text-center">Nama Barang</th>
+                <th className="border-r border-black p-1.5 w-[5%] font-bold text-center">No</th>
+                <th className="border-r border-black p-1.5 w-[33%] font-bold text-center">Nama Barang</th>
                 <th className="border-r border-black p-1.5 w-[12%] font-bold text-center">Banyaknya</th>
-                <th className="border-r border-black p-0 w-[30%]" colSpan={2}>
+                <th className="border-r border-black p-0 w-[25%]" colSpan={2}>
                   <div className="border-b border-black py-1 font-bold text-center">Taksiran Harga</div>
                   <div className="grid grid-cols-2">
                     <div className="border-r border-black py-1 font-bold text-center">Satuan</div>
@@ -246,35 +251,51 @@ export default function PurchaseDocument({ data, hidePrintControls = false }: Pu
 
           {/* Right Column: 4 Approval Columns (Diterima, Diminta, Diketahui, Disetujui) */}
           <div className="col-span-5 grid grid-cols-4 text-center">
-            {/* 1. Diterima (Kosong) */}
+            {/* 1. Diterima */}
             <div className="border-r border-black flex flex-col justify-between">
               <div className="border-b border-black py-1 font-semibold text-[10.5px]">Diterima</div>
-              <div className="flex-1 min-h-[85px]"></div>
-            </div>
-
-            {/* 2. Diminta (Tanda Tangan Asli ROYAN - RDI Sesuai Permintaan) */}
-            <div className="border-r border-black flex flex-col justify-between">
-              <div className="border-b border-black py-1 font-semibold text-[10.5px]">Diminta</div>
-              <div className="flex-1 min-h-[85px] flex flex-col items-center justify-center p-1">
-                <img
-                  src={SIGNATURE_ROYAN_SRC}
-                  alt="ROYAN - RDI"
-                  className="h-16 w-auto object-contain block mix-blend-multiply"
-                  style={{ maxHeight: '65px' }}
-                />
+              <div className="flex-1 min-h-[60px]"></div>
+              {/* Kolom Bawah Khusus untuk Diisi Nama */}
+              <div className="border-t border-black h-[26px] flex items-center justify-center text-[10px] font-medium text-black px-0.5 truncate">
+                {diterimaOleh || ''}
               </div>
             </div>
 
-            {/* 3. Diketahui (Kosong) */}
+            {/* 2. Diminta (Tanda Tangan Asli ROYAN - RDI & Nama di Bawah) */}
             <div className="border-r border-black flex flex-col justify-between">
-              <div className="border-b border-black py-1 font-semibold text-[10.5px]">Diketahui</div>
-              <div className="flex-1 min-h-[85px]"></div>
+              <div className="border-b border-black py-1 font-semibold text-[10.5px]">Diminta</div>
+              <div className="flex-1 min-h-[60px] flex items-center justify-center p-0.5">
+                <img
+                  src={SIGNATURE_ROYAN_SRC}
+                  alt="Tanda Tangan Diminta"
+                  className="h-14 w-auto object-contain block mix-blend-multiply"
+                  style={{ maxHeight: '55px' }}
+                />
+              </div>
+              {/* Kolom Bawah Khusus untuk Diisi Nama */}
+              <div className="border-t border-black h-[26px] flex items-center justify-center text-[10px] font-medium text-black px-0.5 truncate">
+                {dimintaOleh || ''}
+              </div>
             </div>
 
-            {/* 4. Disetujui (Kosong) */}
+            {/* 3. Diketahui */}
+            <div className="border-r border-black flex flex-col justify-between">
+              <div className="border-b border-black py-1 font-semibold text-[10.5px]">Diketahui</div>
+              <div className="flex-1 min-h-[60px]"></div>
+              {/* Kolom Bawah Khusus untuk Diisi Nama */}
+              <div className="border-t border-black h-[26px] flex items-center justify-center text-[10px] font-medium text-black px-0.5 truncate">
+                {diketahuiOleh || ''}
+              </div>
+            </div>
+
+            {/* 4. Disetujui */}
             <div className="flex flex-col justify-between">
               <div className="border-b border-black py-1 font-semibold text-[10.5px]">Disetujui</div>
-              <div className="flex-1 min-h-[85px]"></div>
+              <div className="flex-1 min-h-[60px]"></div>
+              {/* Kolom Bawah Khusus untuk Diisi Nama */}
+              <div className="border-t border-black h-[26px] flex items-center justify-center text-[10px] font-medium text-black px-0.5 truncate">
+                {disetujuiOleh || ''}
+              </div>
             </div>
           </div>
         </div>
