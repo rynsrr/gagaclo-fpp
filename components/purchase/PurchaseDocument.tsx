@@ -168,25 +168,23 @@ export default function PurchaseDocument({ data, hidePrintControls = false }: Pu
             <table className="w-full table-fixed border-collapse text-[10.5px]">
               <colgroup>
                 <col style={{ width: '5%' }} />
-                <col style={{ width: '31%' }} />
-                <col style={{ width: '10%' }} />
+                <col style={{ width: '29%' }} />
+                <col style={{ width: '12%' }} />
                 <col style={{ width: '12%' }} />
                 <col style={{ width: '12%' }} />
                 <col style={{ width: '30%' }} />
               </colgroup>
               <thead>
-                <tr className="border-b border-black text-center font-bold text-[10.5px] leading-tight">
-                  <th className="border-r border-black p-1 font-bold text-center">No</th>
-                  <th className="border-r border-black p-1 font-bold text-center">Nama Barang</th>
-                  <th className="border-r border-black p-1 font-bold text-center">Banyaknya</th>
-                  <th className="border-r border-black p-0" colSpan={2}>
-                    <div className="border-b border-black py-0.5 font-bold text-center">Taksiran Harga</div>
-                    <div className="grid grid-cols-2">
-                      <div className="border-r border-black py-0.5 font-bold text-center">Satuan</div>
-                      <div className="py-0.5 font-bold text-center">Jumlah</div>
-                    </div>
-                  </th>
-                  <th className="p-1 font-bold text-center">Supplier</th>
+                <tr className="text-center font-bold text-[10px] leading-tight">
+                  <th rowSpan={2} className="border-r border-b border-black p-1 font-bold text-center align-middle">No</th>
+                  <th rowSpan={2} className="border-r border-b border-black p-1 font-bold text-center align-middle">Nama Barang</th>
+                  <th rowSpan={2} className="border-r border-b border-black p-1 font-bold text-center align-middle whitespace-nowrap">Banyaknya</th>
+                  <th colSpan={2} className="border-r border-b border-black py-0.5 font-bold text-center">Taksiran Harga</th>
+                  <th rowSpan={2} className="border-b border-black p-1 font-bold text-center align-middle">Supplier</th>
+                </tr>
+                <tr className="text-center font-bold text-[10px] leading-tight">
+                  <th className="border-r border-b border-black py-0.5 font-bold text-center">Satuan</th>
+                  <th className="border-r border-b border-black py-0.5 font-bold text-center">Jumlah</th>
                 </tr>
               </thead>
               <tbody>
