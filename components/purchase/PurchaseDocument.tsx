@@ -77,7 +77,7 @@ export default function PurchaseDocument({ data, hidePrintControls = false }: Pu
           </div>
 
           {/* Company Details */}
-          <div className="text-right text-[11px] leading-tight text-black">
+          <div className="text-left text-[11px] leading-tight text-black">
             <div className="font-semibold text-[11.5px]">PT Gagaclo</div>
             <div>JL. Tambakaji Timur No.1,</div>
             <div>Semarang 50185, Central Java, Indonesia</div>
