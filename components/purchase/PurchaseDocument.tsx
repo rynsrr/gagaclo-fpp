@@ -306,36 +306,24 @@ export default function PurchaseDocument({ data, hidePrintControls = false }: Pu
         </div>
 
         {/* ========================================================
-            BATAS SETENGAH HALAMAN A4 (GARIS PUTUS-PUTUS / PEMOTONG)
+            BATAS SETENGAH HALAMAN A4 (GARIS PUTUS-PUTUS)
             ======================================================== */}
-        <div className="w-full my-2.5 flex items-center justify-between text-zinc-400 text-[8.5px] print:text-gray-500">
-          <div className="border-t border-dashed border-gray-400 flex-1"></div>
-          <span className="px-2 italic font-semibold tracking-wider uppercase">
-            Batas Setengah Halaman A4 &bull; Referensi Foto / Lampiran Fisik
-          </span>
-          <div className="border-t border-dashed border-gray-400 flex-1"></div>
-        </div>
+        <div className="w-full my-2 border-t border-dashed border-black/30"></div>
 
         {/* ========================================================
-            BAGIAN BAWAH: TEMPAT REFERENSI FOTO (SETENGAH A4)
+            BAGIAN BAWAH: LAMPIRAN (SETENGAH A4)
             ======================================================== */}
-        <div className="w-full flex-1 flex flex-col min-h-[115mm] justify-between">
-          {/* Header Referensi Foto */}
-          <div className="w-full border border-black bg-gray-100 print:bg-gray-100 flex items-center justify-between px-3 py-1 text-[10.5px] font-bold">
-            <div className="flex items-center space-x-1.5">
-              <Camera className="w-3.5 h-3.5 print:hidden text-zinc-700" />
-              <span className="tracking-wide uppercase">LAMPIRAN : REFERENSI FOTO / CONTOH BARANG</span>
-            </div>
-            <span className="font-normal text-[9.5px] italic">
-              Nomor FPP: <span className="font-bold font-mono not-italic">{nomor || 'ROYAN-0001'}</span>
-            </span>
+        <div className="w-full flex-1 flex flex-col min-h-[115mm]">
+          {/* Header Lampiran (Hanya tulis LAMPIRAN) */}
+          <div className="w-full border border-black py-1 font-bold text-[12px] tracking-wider uppercase text-center bg-white">
+            LAMPIRAN
           </div>
 
-          {/* Area Kotak Foto */}
-          <div className="w-full border-x border-b border-black p-2.5 flex-1 flex flex-col justify-between">
+          {/* Area Kotak Lampiran (Bersih dan Polos) */}
+          <div className="w-full border-x border-b border-black p-3 flex-1 flex flex-col justify-center items-center">
             {photos && photos.length > 0 ? (
               <div
-                className={`grid gap-2.5 w-full flex-1 items-center ${
+                className={`grid gap-3 w-full flex-1 items-center ${
                   photos.length === 1
                     ? 'grid-cols-1 place-items-center'
                     : photos.length === 2
@@ -348,17 +336,17 @@ export default function PurchaseDocument({ data, hidePrintControls = false }: Pu
                 {photos.map((photo, pIdx) => (
                   <div
                     key={photo.id || pIdx}
-                    className="border border-black/30 rounded p-1.5 flex flex-col items-center bg-zinc-50 print:bg-white w-full h-full justify-between max-h-[92mm]"
+                    className="border border-black/20 rounded p-1.5 flex flex-col items-center bg-white w-full h-full justify-between max-h-[98mm]"
                   >
-                    <div className="w-full flex-1 flex items-center justify-center overflow-hidden min-h-[65mm] max-h-[75mm]">
+                    <div className="w-full flex-1 flex items-center justify-center overflow-hidden min-h-[65mm] max-h-[82mm]">
                       <img
                         src={photo.url}
-                        alt={photo.caption || `Referensi Foto ${pIdx + 1}`}
-                        className="max-h-[72mm] max-w-full object-contain rounded"
+                        alt={photo.caption || `Lampiran ${pIdx + 1}`}
+                        className="max-h-[80mm] max-w-full object-contain"
                       />
                     </div>
                     {photo.caption && (
-                      <div className="mt-1 text-[9.5px] font-medium text-center text-black border-t border-gray-200 pt-0.5 w-full truncate">
+                      <div className="mt-1 text-[10px] font-medium text-center text-black border-t border-gray-200 pt-0.5 w-full truncate">
                         {photo.caption}
                       </div>
                     )}
@@ -366,34 +354,9 @@ export default function PurchaseDocument({ data, hidePrintControls = false }: Pu
                 ))}
               </div>
             ) : (
-              /* Frame Kosong untuk Ditempel Foto Fisik / Placeholder Form Scanned Style */
-              <div className="grid grid-cols-2 gap-3 w-full flex-1 min-h-[85mm] items-stretch">
-                <div className="border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center p-4 text-center bg-gray-50/50 print:bg-white">
-                  <Camera className="w-7 h-7 mb-1.5 text-gray-400 stroke-[1.5]" />
-                  <span className="font-bold text-[10px] text-gray-700 uppercase tracking-wide">
-                    Tempat Foto Referensi 1
-                  </span>
-                  <span className="text-[9px] text-gray-400 mt-1 max-w-[200px]">
-                    Tempelkan foto fisik sampel barang atau unggah foto digital pada sistem
-                  </span>
-                </div>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center p-4 text-center bg-gray-50/50 print:bg-white">
-                  <Camera className="w-7 h-7 mb-1.5 text-gray-400 stroke-[1.5]" />
-                  <span className="font-bold text-[10px] text-gray-700 uppercase tracking-wide">
-                    Tempat Foto Referensi 2
-                  </span>
-                  <span className="text-[9px] text-gray-400 mt-1 max-w-[200px]">
-                    Tempelkan foto fisik sampel barang atau unggah foto digital pada sistem
-                  </span>
-                </div>
-              </div>
+              /* Bersih dan polos tanpa teks placeholder */
+              <div className="w-full flex-1 min-h-[95mm]"></div>
             )}
-
-            {/* Footer Catatan Foto */}
-            <div className="text-[8.5px] text-gray-500 italic mt-1.5 pt-1 border-t border-gray-200 flex justify-between items-center">
-              <span>* Foto referensi ini berfungsi sebagai lampiran pendukung spesifikasi fisik barang yang diminta.</span>
-              <span className="font-normal not-italic text-black font-semibold">PT GAGACLO &bull; FORMULIR FPP-01</span>
-            </div>
           </div>
         </div>
       </div>

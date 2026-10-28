@@ -587,10 +587,10 @@ export default function PurchaseFormEditor({
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-3">
             <div>
               <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 block">
-                5. Referensi Foto / Lampiran Pendukung (Setengah A4 Bawah)
+                5. Lampiran (Setengah A4 Bawah)
               </span>
               <span className="text-[11px] text-zinc-500">
-                Foto akan otomatis dicetak pada setengah bagian bawah halaman A4.
+                Foto atau lampiran pendukung akan dicetak pada kotak Lampiran di setengah bagian bawah halaman A4.
               </span>
             </div>
             <div>
