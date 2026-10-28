@@ -2,9 +2,9 @@
 
 import React from 'react';
 import { PurchaseRequisition, PurchaseJenis } from '@/types/purchase';
-import { formatRupiah, formatShortDate, formatIndonesianDate } from '@/lib/purchaseService';
-import { LOGO_GAGACLO_SRC } from '@/lib/logoData';
-import { Printer, Download, Eye } from 'lucide-react';
+import { formatRupiah, formatShortDate } from '@/lib/purchaseService';
+import { LOGO_GAGACLO_SRC, SIGNATURE_ROYAN_SRC } from '@/lib/logoData';
+import { Printer, Eye } from 'lucide-react';
 
 interface PurchaseDocumentProps {
   data: PurchaseRequisition;
@@ -20,14 +20,6 @@ export default function PurchaseDocument({ data, hidePrintControls = false }: Pu
     uraianKeperluan,
     tanggalDiterima,
     catatan,
-    dimintaOleh,
-    dimintaTanggal,
-    diketahuiOleh,
-    diketahuiTanggal,
-    disetujuiOleh,
-    disetujuiTanggal,
-    diterimaOleh,
-    diterimaTanggal,
   } = data;
 
   // We want to ensure at least 8-10 rows to fill the paper naturally like the scanned form
@@ -65,9 +57,9 @@ export default function PurchaseDocument({ data, hidePrintControls = false }: Pu
         style={{ fontFamily: '"Arial", "Helvetica", sans-serif' }}
       >
         {/* ================= HEADER KOP SURAT ================= */}
-        <div className="flex items-start justify-between pb-2">
+        <div className="flex items-center justify-start gap-4 pb-2">
           {/* Logo P.T. GAGACLO (Exact Official Logo) */}
-          <div className="flex items-center">
+          <div className="flex-shrink-0">
             <img
               src={LOGO_GAGACLO_SRC}
               alt="P.T. GAGACLO"
@@ -76,7 +68,7 @@ export default function PurchaseDocument({ data, hidePrintControls = false }: Pu
             />
           </div>
 
-          {/* Company Details */}
+          {/* Company Details (Mepet persis di sebelah logo, rata kiri) */}
           <div className="text-left text-[11px] leading-tight text-black">
             <div className="font-semibold text-[11.5px]">PT Gagaclo</div>
             <div>JL. Tambakaji Timur No.1,</div>
@@ -98,17 +90,17 @@ export default function PurchaseDocument({ data, hidePrintControls = false }: Pu
 
         {/* ================= TOP METADATA BOX ================= */}
         <div className="w-full border border-black grid grid-cols-12 text-[11px]">
-          {/* Left Column: Jenis */}
-          <div className="col-span-8 p-1.5 border-r border-black flex flex-col justify-center">
-            <div className="flex items-center space-x-2">
-              <span className="font-semibold">Jenis :</span>
-              <div className="flex items-center space-x-1.5 tracking-wide">
+          {/* Left Column: Jenis (Satu Baris: Jenis : Rutin / Non Rutin / Segera (Lingkar salah satu )) */}
+          <div className="col-span-8 px-2 py-1.5 border-r border-black flex items-center justify-between text-[11px]">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <span className="italic">Jenis :</span>
+              <div className="flex items-center space-x-1 tracking-wide italic">
                 {/* Rutin */}
                 <span
                   className={`px-2 py-0.5 ${
                     jenis === 'Rutin'
-                      ? 'border-[1.5px] border-black rounded-full font-bold'
-                      : 'italic'
+                      ? 'border-[1.5px] border-black rounded-full font-bold not-italic'
+                      : ''
                   }`}
                 >
                   Rutin
@@ -119,8 +111,8 @@ export default function PurchaseDocument({ data, hidePrintControls = false }: Pu
                 <span
                   className={`px-2 py-0.5 ${
                     jenis === 'Non Rutin'
-                      ? 'border-[1.5px] border-black rounded-full font-bold'
-                      : 'italic'
+                      ? 'border-[1.5px] border-black rounded-full font-bold not-italic'
+                      : ''
                   }`}
                 >
                   Non Rutin
@@ -131,20 +123,20 @@ export default function PurchaseDocument({ data, hidePrintControls = false }: Pu
                 <span
                   className={`px-2 py-0.5 ${
                     jenis === 'Segera'
-                      ? 'border-[1.5px] border-black rounded-full font-bold'
-                      : 'italic'
+                      ? 'border-[1.5px] border-black rounded-full font-bold not-italic'
+                      : ''
                   }`}
                 >
                   Segera
                 </span>
               </div>
             </div>
-            <div className="text-[9.5px] text-black font-normal mt-0.5 ml-10">
+            <span className="text-[10px] text-black italic whitespace-nowrap pl-2">
               (Lingkar salah satu )
-            </div>
+            </span>
           </div>
 
-          {/* Right Column: Nomor & Tanggal */}
+          {/* Right Column: Nomor (Kosong jika belum diisi) & Tanggal */}
           <div className="col-span-4 p-1.5 flex flex-col justify-center text-[11px] space-y-1">
             <div className="flex items-center">
               <span className="w-16 font-semibold">Nomor</span>
@@ -233,19 +225,20 @@ export default function PurchaseDocument({ data, hidePrintControls = false }: Pu
 
         {/* ================= FOOTER / TANGGAL DITERIMA & APPROVALS ================= */}
         <div className="w-full border-x border-b border-black grid grid-cols-12 text-[11px]">
-          {/* Left Column: Tanggal Diterima & Catatan */}
-          <div className="col-span-7 p-2 border-r border-black flex flex-col justify-between min-h-[110px]">
-            <div>
-              <div className="font-semibold mb-1">
-                Tanggal Diterima :{' '}
-                <span className="font-normal">
-                  {tanggalDiterima ? formatShortDate(tanggalDiterima) : ''}
-                </span>
-              </div>
-              <div className="font-semibold">
-                Catatan :
-              </div>
-              <div className="mt-1 pl-1 text-[10.5px] leading-snug whitespace-pre-wrap text-black">
+          {/* Left Column: Tanggal Diterima & Catatan dengan Kolom Terpisah Sesuai Dokumen */}
+          <div className="col-span-7 border-r border-black flex flex-col justify-between min-h-[115px]">
+            {/* Row 1: Tanggal Diterima */}
+            <div className="border-b border-black p-1.5 font-normal">
+              Tanggal Diterima :{' '}
+              <span className="font-normal">
+                {tanggalDiterima ? formatShortDate(tanggalDiterima) : ''}
+              </span>
+            </div>
+
+            {/* Row 2: Catatan Box */}
+            <div className="p-1.5 flex-1 min-h-[85px] flex flex-col">
+              <div className="font-normal mb-0.5">Catatan :</div>
+              <div className="px-1 text-[10.5px] leading-snug whitespace-pre-wrap text-black flex-1">
                 {catatan || ''}
               </div>
             </div>
@@ -253,56 +246,35 @@ export default function PurchaseDocument({ data, hidePrintControls = false }: Pu
 
           {/* Right Column: 4 Approval Columns (Diterima, Diminta, Diketahui, Disetujui) */}
           <div className="col-span-5 grid grid-cols-4 text-center">
-            {/* 1. Diterima */}
+            {/* 1. Diterima (Kosong) */}
             <div className="border-r border-black flex flex-col justify-between">
               <div className="border-b border-black py-1 font-semibold text-[10.5px]">Diterima</div>
-              <div className="flex-1 min-h-[60px] flex items-center justify-center text-[10px] text-gray-500 italic">
-                {diterimaOleh ? (
-                  <span className="text-black not-italic font-medium">{diterimaOleh}</span>
-                ) : ''}
-              </div>
-              <div className="border-t border-black/20 py-0.5 text-[9px] text-gray-700">
-                {diterimaTanggal ? formatShortDate(diterimaTanggal) : ''}
-              </div>
+              <div className="flex-1 min-h-[85px]"></div>
             </div>
 
-            {/* 2. Diminta */}
+            {/* 2. Diminta (Tanda Tangan Asli ROYAN - RDI Sesuai Permintaan) */}
             <div className="border-r border-black flex flex-col justify-between">
               <div className="border-b border-black py-1 font-semibold text-[10.5px]">Diminta</div>
-              <div className="flex-1 min-h-[60px] flex items-center justify-center text-[10px] text-gray-500 italic">
-                {dimintaOleh ? (
-                  <span className="text-black not-italic font-medium">{dimintaOleh}</span>
-                ) : ''}
-              </div>
-              <div className="border-t border-black/20 py-0.5 text-[9px] text-gray-700">
-                {dimintaTanggal ? formatShortDate(dimintaTanggal) : ''}
+              <div className="flex-1 min-h-[85px] flex flex-col items-center justify-center p-1">
+                <img
+                  src={SIGNATURE_ROYAN_SRC}
+                  alt="ROYAN - RDI"
+                  className="h-16 w-auto object-contain block mix-blend-multiply"
+                  style={{ maxHeight: '65px' }}
+                />
               </div>
             </div>
 
-            {/* 3. Diketahui */}
+            {/* 3. Diketahui (Kosong) */}
             <div className="border-r border-black flex flex-col justify-between">
               <div className="border-b border-black py-1 font-semibold text-[10.5px]">Diketahui</div>
-              <div className="flex-1 min-h-[60px] flex items-center justify-center text-[10px] text-gray-500 italic">
-                {diketahuiOleh ? (
-                  <span className="text-black not-italic font-medium">{diketahuiOleh}</span>
-                ) : ''}
-              </div>
-              <div className="border-t border-black/20 py-0.5 text-[9px] text-gray-700">
-                {diketahuiTanggal ? formatShortDate(diketahuiTanggal) : ''}
-              </div>
+              <div className="flex-1 min-h-[85px]"></div>
             </div>
 
-            {/* 4. Disetujui */}
+            {/* 4. Disetujui (Kosong) */}
             <div className="flex flex-col justify-between">
               <div className="border-b border-black py-1 font-semibold text-[10.5px]">Disetujui</div>
-              <div className="flex-1 min-h-[60px] flex items-center justify-center text-[10px] text-gray-500 italic">
-                {disetujuiOleh ? (
-                  <span className="text-black not-italic font-medium">{disetujuiOleh}</span>
-                ) : ''}
-              </div>
-              <div className="border-t border-black/20 py-0.5 text-[9px] text-gray-700">
-                {disetujuiTanggal ? formatShortDate(disetujuiTanggal) : ''}
-              </div>
+              <div className="flex-1 min-h-[85px]"></div>
             </div>
           </div>
         </div>

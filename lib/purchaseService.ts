@@ -6,7 +6,7 @@ const STORAGE_KEY = 'gagaclo_purchase_requisitions_v1';
 // Sample default requisition matching PT Gagaclo operations
 export const SAMPLE_PURCHASE_REQUISITION: PurchaseRequisition = {
   id: 'fpp-sample-001',
-  nomor: 'FPP/2026/10/001',
+  nomor: '',
   tanggal: '2026-10-28',
   jenis: 'Rutin',
   items: [
@@ -48,16 +48,16 @@ export const SAMPLE_PURCHASE_REQUISITION: PurchaseRequisition = {
     },
   ],
   uraianKeperluan: 'Pengadaan bahan baku dan perlengkapan produksi garmen untuk pemenuhan PO Buyer batch November 2026.',
-  tanggalDiterima: '2026-10-28',
+  tanggalDiterima: '',
   catatan: 'Prioritas pengiriman kain katun maksimal tanggal 2 November 2026.',
-  dimintaOleh: 'Royan S. (PPIC)',
-  dimintaTanggal: '2026-10-28',
-  diketahuiOleh: 'Cynara M. (Spv Prod)',
-  diketahuiTanggal: '2026-10-28',
-  disetujuiOleh: 'Budi Santoso (Plant Mgr)',
-  disetujuiTanggal: '2026-10-28',
-  diterimaOleh: 'Ami Wardani (Purchasing)',
-  diterimaTanggal: '2026-10-28',
+  dimintaOleh: 'ROYAN - RDI',
+  dimintaTanggal: '',
+  diketahuiOleh: '',
+  diketahuiTanggal: '',
+  disetujuiOleh: '',
+  disetujuiTanggal: '',
+  diterimaOleh: '',
+  diterimaTanggal: '',
   status: 'Diajukan',
   totalTaksiran: 7550000,
   createdAt: '2026-10-28T08:00:00.000Z',
@@ -94,7 +94,7 @@ function mapFromDb(row: any): PurchaseRequisition {
 function mapToDb(item: PurchaseRequisition): any {
   return {
     id: item.id,
-    nomor: item.nomor,
+    nomor: item.nomor || '',
     tanggal: item.tanggal,
     jenis: item.jenis,
     items: item.items,

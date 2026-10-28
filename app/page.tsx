@@ -113,13 +113,13 @@ export default function MainPage() {
 
   // Handlers
   const handleAddNewFPP = () => {
-    const nextNomor = generateNextNomor(purchases);
     const newDoc: PurchaseRequisition = {
       ...DEFAULT_PURCHASE_REQUISITION,
       id: 'fpp-' + Date.now(),
-      nomor: nextNomor,
+      nomor: '',
       tanggal: new Date().toISOString().split('T')[0],
-      dimintaTanggal: new Date().toISOString().split('T')[0],
+      dimintaTanggal: '',
+      dimintaOleh: 'ROYAN - RDI',
       items: [
         {
           id: 'item-1',

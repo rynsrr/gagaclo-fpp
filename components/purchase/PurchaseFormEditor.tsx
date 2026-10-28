@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { PurchaseRequisition, PurchaseItem, PurchaseJenis, DEFAULT_PURCHASE_REQUISITION } from '@/types/purchase';
 import {
   formatRupiah,
@@ -8,6 +8,7 @@ import {
   generateNextNomor,
   SAMPLE_PURCHASE_REQUISITION,
 } from '@/lib/purchaseService';
+import { SIGNATURE_ROYAN_SRC } from '@/lib/logoData';
 import {
   Plus,
   Trash2,
@@ -17,10 +18,7 @@ import {
   RotateCcw,
   CheckCircle2,
   Calendar,
-  AlertCircle,
   Hash,
-  Building,
-  UserCheck,
 } from 'lucide-react';
 
 interface PurchaseFormEditorProps {
@@ -38,13 +36,13 @@ export default function PurchaseFormEditor({
 }: PurchaseFormEditorProps) {
   const [formData, setFormData] = useState<PurchaseRequisition>(() => {
     if (initialData && initialData.id) return initialData;
-    const nextNomor = generateNextNomor(allPurchases);
     return {
       ...DEFAULT_PURCHASE_REQUISITION,
       id: 'fpp-' + Date.now(),
-      nomor: nextNomor,
+      nomor: '',
       tanggal: new Date().toISOString().split('T')[0],
-      dimintaTanggal: new Date().toISOString().split('T')[0],
+      dimintaTanggal: '',
+      dimintaOleh: 'ROYAN - RDI',
     };
   });
 
@@ -126,18 +124,17 @@ export default function PurchaseFormEditor({
       setFormData({
         ...SAMPLE_PURCHASE_REQUISITION,
         id: 'fpp-' + Date.now(),
-        nomor: generateNextNomor(allPurchases),
+        nomor: '',
       });
     }
   };
 
   const handleReset = () => {
     if (confirm('Kosongkan semua isian formulir?')) {
-      const nextNomor = generateNextNomor(allPurchases);
       setFormData({
         ...DEFAULT_PURCHASE_REQUISITION,
         id: 'fpp-' + Date.now(),
-        nomor: nextNomor,
+        nomor: '',
         tanggal: new Date().toISOString().split('T')[0],
       });
     }
@@ -145,10 +142,6 @@ export default function PurchaseFormEditor({
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!formData.nomor.trim()) {
-      alert('Mohon isi Nomor Formulir.');
-      return;
-    }
     if (formData.items.every((it) => !it.namaBarang.trim())) {
       alert('Mohon masukkan minimal satu nama barang.');
       return;
@@ -246,10 +239,10 @@ export default function PurchaseFormEditor({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Nomor FPP */}
+            {/* Nomor FPP (Boleh dikosongkan) */}
             <div>
               <label className="block text-xs font-medium text-zinc-300 mb-1.5 flex items-center justify-between">
-                <span>Nomor Formulir</span>
+                <span>Nomor Formulir (Boleh Kosong)</span>
                 <button
                   type="button"
                   onClick={handleGenerateNewNomor}
@@ -262,10 +255,9 @@ export default function PurchaseFormEditor({
                 <Hash className="w-4 h-4 absolute left-3 top-2.5 text-zinc-500" />
                 <input
                   type="text"
-                  required
                   value={formData.nomor}
                   onChange={(e) => setFormData({ ...formData, nomor: e.target.value })}
-                  placeholder="FPP/2026/10/001"
+                  placeholder="(Boleh dikosongkan)"
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
                 />
               </div>
@@ -493,87 +485,34 @@ export default function PurchaseFormEditor({
           </div>
         </div>
 
-        {/* SECTION 4: TANDA TANGAN & PENGESAHAN */}
+        {/* SECTION 4: PENGESAHAN (DIMINTA OLEH) */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-4">
           <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
             <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              5. Pengesahan & Tanda Tangan
+              5. Pengesahan Pemohon (Diminta)
             </span>
             <span className="text-xs text-zinc-500">
-              Sesuai urutan cetak: Diterima | Diminta | Diketahui | Disetujui
+              Kolom Diterima, Diketahui, dan Disetujui dibiarkan kosong untuk tanda tangan fisik
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* 1. Diterima */}
-            <div className="bg-zinc-950 p-3.5 rounded-xl border border-zinc-800 space-y-2">
-              <div className="text-xs font-bold text-zinc-300">1. Diterima (Purchasing)</div>
-              <input
-                type="text"
-                value={formData.diterimaOleh || ''}
-                onChange={(e) => setFormData({ ...formData, diterimaOleh: e.target.value })}
-                placeholder="Nama Purchasing"
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
-              />
-              <input
-                type="date"
-                value={formData.diterimaTanggal || ''}
-                onChange={(e) => setFormData({ ...formData, diterimaTanggal: e.target.value })}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1 text-xs text-zinc-400 focus:outline-none focus:border-blue-500"
-              />
-            </div>
-
-            {/* 2. Diminta */}
-            <div className="bg-zinc-950 p-3.5 rounded-xl border border-zinc-800 space-y-2">
-              <div className="text-xs font-bold text-zinc-300">2. Diminta (Pemohon)</div>
+          <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-800 flex flex-wrap items-center justify-between gap-4">
+            <div className="space-y-1.5 flex-1 min-w-[240px]">
+              <label className="text-xs font-semibold text-zinc-300">Nama Pemohon (Diminta):</label>
               <input
                 type="text"
                 value={formData.dimintaOleh || ''}
                 onChange={(e) => setFormData({ ...formData, dimintaOleh: e.target.value })}
-                placeholder="Nama Pemohon / PPIC"
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
-              />
-              <input
-                type="date"
-                value={formData.dimintaTanggal || ''}
-                onChange={(e) => setFormData({ ...formData, dimintaTanggal: e.target.value })}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1 text-xs text-zinc-400 focus:outline-none focus:border-blue-500"
+                placeholder="ROYAN - RDI"
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500 font-medium"
               />
             </div>
-
-            {/* 3. Diketahui */}
-            <div className="bg-zinc-950 p-3.5 rounded-xl border border-zinc-800 space-y-2">
-              <div className="text-xs font-bold text-zinc-300">3. Diketahui (Supervisor)</div>
-              <input
-                type="text"
-                value={formData.diketahuiOleh || ''}
-                onChange={(e) => setFormData({ ...formData, diketahuiOleh: e.target.value })}
-                placeholder="Nama Supervisor / Kabag"
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
-              />
-              <input
-                type="date"
-                value={formData.diketahuiTanggal || ''}
-                onChange={(e) => setFormData({ ...formData, diketahuiTanggal: e.target.value })}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1 text-xs text-zinc-400 focus:outline-none focus:border-blue-500"
-              />
-            </div>
-
-            {/* 4. Disetujui */}
-            <div className="bg-zinc-950 p-3.5 rounded-xl border border-zinc-800 space-y-2">
-              <div className="text-xs font-bold text-zinc-300">4. Disetujui (Manajer/Direktur)</div>
-              <input
-                type="text"
-                value={formData.disetujuiOleh || ''}
-                onChange={(e) => setFormData({ ...formData, disetujuiOleh: e.target.value })}
-                placeholder="Nama Manajer / Plant Head"
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
-              />
-              <input
-                type="date"
-                value={formData.disetujuiTanggal || ''}
-                onChange={(e) => setFormData({ ...formData, disetujuiTanggal: e.target.value })}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1 text-xs text-zinc-400 focus:outline-none focus:border-blue-500"
+            <div className="flex items-center space-x-3 bg-zinc-900/60 p-2.5 px-3.5 rounded-xl border border-zinc-800">
+              <span className="text-xs text-zinc-400">Tanda Tangan Otomatis:</span>
+              <img
+                src={SIGNATURE_ROYAN_SRC}
+                alt="Tanda Tangan ROYAN - RDI"
+                className="h-10 w-auto object-contain bg-white rounded p-1"
               />
             </div>
           </div>
