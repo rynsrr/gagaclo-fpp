@@ -2,7 +2,7 @@
  * Utility to compress image files in-browser before storing in Supabase or LocalStorage.
  * Scales down to maxWidth while maintaining aspect ratio and encodes to JPEG.
  */
-export function compressImage(file: File, maxWidth = 1200, quality = 0.82): Promise<string> {
+export function compressImage(file: File | Blob, maxWidth = 1200, quality = 0.82): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);

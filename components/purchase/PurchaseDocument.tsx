@@ -18,6 +18,7 @@ import {
   UploadCloud,
   X,
   RefreshCw,
+  Clipboard,
 } from 'lucide-react';
 
 interface PurchaseDocumentProps {
@@ -60,9 +61,15 @@ export default function PurchaseDocument({
     diterimaOleh = '',
   } = data;
 
+  const dataRef = useRef(data);
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [pasteNotice, setPasteNotice] = useState<string | null>(null);
 
   // Recalculate total taksiran
   const calculateTotal = (itemList: PurchaseItem[]): number => {
@@ -73,7 +80,7 @@ export default function PurchaseDocument({
   const updateField = (field: keyof PurchaseRequisition, value: any) => {
     if (!onChange) return;
     onChange({
-      ...data,
+      ...dataRef.current,
       [field]: value,
     });
   };
@@ -81,7 +88,8 @@ export default function PurchaseDocument({
   // Helper to update specific item row
   const handleItemChange = (index: number, field: keyof PurchaseItem, value: any) => {
     if (!onChange) return;
-    const updatedItems = [...items];
+    const current = dataRef.current;
+    const updatedItems = [...current.items];
     const targetItem = { ...updatedItems[index], [field]: value };
 
     // Auto-calculate 'jumlah' if hargaSatuan or banyaknya contains numeric quantity
@@ -99,7 +107,7 @@ export default function PurchaseDocument({
     updatedItems[index] = targetItem;
     const newTotal = calculateTotal(updatedItems);
     onChange({
-      ...data,
+      ...current,
       items: updatedItems,
       totalTaksiran: newTotal,
     });
@@ -108,18 +116,19 @@ export default function PurchaseDocument({
   // Add new item row
   const handleAddItemRow = () => {
     if (!onChange) return;
+    const current = dataRef.current;
     const newItem: PurchaseItem = {
-      id: 'item-' + Date.now() + '-' + (items.length + 1),
-      no: items.length + 1,
+      id: 'item-' + Date.now() + '-' + (current.items.length + 1),
+      no: current.items.length + 1,
       namaBarang: '',
       banyaknya: '',
       hargaSatuan: 0,
       jumlah: 0,
       supplier: '',
     };
-    const updated = [...items, newItem];
+    const updated = [...current.items, newItem];
     onChange({
-      ...data,
+      ...current,
       items: updated,
       totalTaksiran: calculateTotal(updated),
     });
@@ -128,8 +137,8 @@ export default function PurchaseDocument({
   // Remove item row
   const handleRemoveItemRow = (index: number) => {
     if (!onChange) return;
-    if (items.length <= 1) {
-      // Just clear the single row rather than removing
+    const current = dataRef.current;
+    if (current.items.length <= 1) {
       const cleared: PurchaseItem[] = [
         {
           id: 'item-1',
@@ -142,29 +151,32 @@ export default function PurchaseDocument({
         },
       ];
       onChange({
-        ...data,
+        ...current,
         items: cleared,
         totalTaksiran: 0,
       });
       return;
     }
-    const updated = items
+    const updated = current.items
       .filter((_, idx) => idx !== index)
       .map((item, idx) => ({ ...item, no: idx + 1 }));
     onChange({
-      ...data,
+      ...current,
       items: updated,
       totalTaksiran: calculateTotal(updated),
     });
   };
 
-  // Photo handlers
-  const processAndAddFiles = async (fileList: FileList | File[]) => {
+  // Process and add files (supports up to 6 photos in a single page)
+  const processAndAddFiles = async (fileList: (File | Blob)[]) => {
     if (!onChange) return;
-    const currentPhotos = photos || [];
-    const remainingSlots = 4 - currentPhotos.length;
+    const current = dataRef.current;
+    const currentPhotos = current.photos || [];
+    const maxPhotos = 6;
+    const remainingSlots = maxPhotos - currentPhotos.length;
+
     if (remainingSlots <= 0) {
-      alert('Maksimal lampiran 4 foto.');
+      alert(`Maksimal lampiran ${maxPhotos} foto agar muat dalam 1 halaman A4.`);
       return;
     }
 
@@ -174,13 +186,16 @@ export default function PurchaseDocument({
 
     for (let i = 0; i < filesToProcess.length; i++) {
       const file = filesToProcess[i];
-      if (!file.type.startsWith('image/')) continue;
       try {
         const compressedBase64 = await compressImage(file, 1200, 0.82);
+        let caption = '';
+        if ('name' in file && file.name && !file.name.toLowerCase().startsWith('image')) {
+          caption = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+        }
         newPhotos.push({
           id: 'photo-' + Date.now() + '-' + (currentPhotos.length + i + 1),
           url: compressedBase64,
-          caption: file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '),
+          caption,
         });
       } catch (err) {
         console.error('Failed to compress image:', err);
@@ -190,56 +205,94 @@ export default function PurchaseDocument({
     setIsUploadingPhoto(false);
     if (newPhotos.length > 0) {
       onChange({
-        ...data,
+        ...current,
         photos: [...currentPhotos, ...newPhotos],
       });
+      setPasteNotice(`${newPhotos.length} foto berhasil ditambahkan ke Lampiran!`);
+      setTimeout(() => setPasteNotice(null), 3000);
     }
   };
 
   const handlePhotoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      processAndAddFiles(e.target.files);
+      processAndAddFiles(Array.from(e.target.files));
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleRemovePhoto = (photoId: string) => {
     if (!onChange) return;
+    const current = dataRef.current;
     onChange({
-      ...data,
-      photos: (photos || []).filter((p) => p.id !== photoId),
+      ...current,
+      photos: (current.photos || []).filter((p) => p.id !== photoId),
     });
   };
 
   const handlePhotoCaptionChange = (photoId: string, caption: string) => {
     if (!onChange) return;
+    const current = dataRef.current;
     onChange({
-      ...data,
-      photos: (photos || []).map((p) => (p.id === photoId ? { ...p, caption } : p)),
+      ...current,
+      photos: (current.photos || []).map((p) => (p.id === photoId ? { ...p, caption } : p)),
     });
   };
 
-  // Support Clipboard Paste for images (Ctrl+V)
+  // Clipboard Paste listener (Global capture of Ctrl+V for images)
   useEffect(() => {
     if (!isEditable) return;
+
     const handlePaste = (e: ClipboardEvent) => {
       const items = e.clipboardData?.items;
-      if (!items) return;
-      const imageFiles: File[] = [];
+      if (!items || items.length === 0) return;
+
+      const imageFiles: (File | Blob)[] = [];
       for (let i = 0; i < items.length; i++) {
-        if (items[i].type.indexOf('image') !== -1) {
-          const blob = items[i].getAsFile();
-          if (blob) imageFiles.push(blob);
+        const item = items[i];
+        if (item.type.indexOf('image') !== -1 || item.kind === 'file') {
+          const blob = item.getAsFile();
+          if (blob && (blob.type.startsWith('image/') || item.type.startsWith('image/'))) {
+            imageFiles.push(blob);
+          }
         }
       }
+
+      // If an image was pasted, intercept and add to Lampiran
       if (imageFiles.length > 0) {
+        e.preventDefault();
+        e.stopPropagation();
         processAndAddFiles(imageFiles);
       }
     };
 
-    window.addEventListener('paste', handlePaste);
-    return () => window.removeEventListener('paste', handlePaste);
-  }, [data, isEditable, photos]);
+    window.addEventListener('paste', handlePaste, true);
+    return () => window.removeEventListener('paste', handlePaste, true);
+  }, [isEditable]);
+
+  // Click handler for clipboard paste button
+  const handlePasteFromClipboard = async () => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.read) {
+        const clipboardItems = await navigator.clipboard.read();
+        const imageBlobs: Blob[] = [];
+        for (const item of clipboardItems) {
+          const imageType = item.types.find((t) => t.startsWith('image/'));
+          if (imageType) {
+            const blob = await item.getType(imageType);
+            imageBlobs.push(blob);
+          }
+        }
+        if (imageBlobs.length > 0) {
+          await processAndAddFiles(imageBlobs);
+          return;
+        }
+      }
+    } catch (err) {
+      console.log('Clipboard API direct read not permitted or empty:', err);
+    }
+
+    alert('Untuk menempelkan gambar:\n1. Salin gambar atau ambil tangkapan layar (tekan Win + Shift + S)\n2. Langsung tekan tombol Ctrl + V pada keyboard.');
+  };
 
   const handlePrint = () => {
     window.print();
@@ -257,9 +310,11 @@ export default function PurchaseDocument({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onSave]);
 
-  // Setengah A4 layout: 3 baris minimum agar proporsi seimbang persis scan
+  // Proportions: 3 rows minimum
   const totalDisplayRows = Math.max(items.length, 3);
   const fillerRowsCount = Math.max(0, totalDisplayRows - items.length);
+
+  const photoCount = photos?.length || 0;
 
   return (
     <div className="flex flex-col items-center w-full">
@@ -273,13 +328,20 @@ export default function PurchaseDocument({
             </div>
           )}
 
+          {pasteNotice && (
+            <div className="flex items-center space-x-2 p-3 bg-blue-950/80 border border-blue-500/50 text-blue-200 text-xs sm:text-sm rounded-xl animate-in fade-in duration-300">
+              <Clipboard className="w-4 h-4 text-blue-400 flex-shrink-0" />
+              <span>{pasteNotice}</span>
+            </div>
+          )}
+
           <div className="flex flex-wrap items-center justify-between gap-2.5 bg-slate-900/95 dark:bg-zinc-900/95 border border-slate-700 dark:border-zinc-800 rounded-2xl p-3 px-4 shadow-xl text-white">
             <div className="flex items-center space-x-2">
               <span className="text-xs font-semibold px-2.5 py-1 bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-lg">
                 Input Langsung di Formulir
               </span>
               <span className="hidden sm:inline text-xs text-zinc-400">
-                Klik teks/kolom untuk mengedit &bull; Ctrl+S untuk simpan
+                Ketik langsung &bull; Paste foto (Ctrl+V) &bull; 1 Halaman A4
               </span>
             </div>
 
@@ -312,7 +374,7 @@ export default function PurchaseDocument({
                 type="button"
                 onClick={handlePrint}
                 className="flex items-center space-x-1.5 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg shadow-sm transition active:scale-95"
-                title="Cetak langsung atau simpan sebagai PDF A4"
+                title="Cetak langsung atau simpan sebagai PDF A4 (Pasti 1 Halaman)"
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>Cetak / PDF</span>
@@ -335,10 +397,10 @@ export default function PurchaseDocument({
         </div>
       )}
 
-      {/* Actual Physical Paper Document - Exactly 1 Page A4 (Half-Page FPP & Half-Page Lampiran) */}
+      {/* Actual Physical Paper Document - Exactly 1 Page A4 */}
       <div
         id="printable-fpp-document"
-        className="printable-document bg-white text-black w-full max-w-[210mm] min-h-[297mm] p-[10mm] shadow-2xl print:shadow-none print:p-0 print:m-0 print:w-full print:max-w-none text-[11px] font-sans border border-gray-300 print:border-none select-text box-border flex flex-col justify-between"
+        className="printable-document bg-white text-black w-full max-w-[210mm] min-h-[297mm] p-[10mm] shadow-2xl print:shadow-none print:p-0 print:m-0 print:w-full print:max-w-none text-[11px] font-sans border border-gray-300 print:border-none select-text box-border flex flex-col justify-between print:min-h-0 print:h-auto print:max-h-[280mm] print:overflow-hidden"
         style={{ fontFamily: '"Arial", "Helvetica", sans-serif' }}
       >
         {/* ========================================================
@@ -699,11 +761,10 @@ export default function PurchaseDocument({
           </div>
 
           {/* ================= FOOTER / TANGGAL DITERIMA & APPROVALS ================= */}
-          {/* w-[58%] and w-[42%] align perfectly with Satuan/Jumlah column */}
           <div className="w-full border-x border-b border-black flex text-[10px]">
             {/* Left Column: Tanggal Diterima & Catatan (58%) */}
             <div className="w-[58%] border-r border-black flex flex-col justify-between min-h-[85px]">
-              {/* Row 1: Tanggal Diterima (Height h-[22px] matching approval headers) */}
+              {/* Row 1: Tanggal Diterima */}
               <div className="border-b border-black h-[22px] px-1.5 flex items-center font-normal text-[10px]">
                 <span className="whitespace-nowrap mr-1">Tanggal Diterima :</span>
                 {isEditable ? (
@@ -767,7 +828,6 @@ export default function PurchaseDocument({
                   Diterima
                 </div>
                 <div className="flex-1 min-h-[44px]"></div>
-                {/* Kolom Bawah Nama */}
                 <div className="border-t border-black h-[22px] flex items-center justify-center text-[9px] font-medium text-black px-0.5">
                   {isEditable ? (
                     <>
@@ -799,7 +859,6 @@ export default function PurchaseDocument({
                     style={{ maxHeight: '42px' }}
                   />
                 </div>
-                {/* Kolom Bawah Nama */}
                 <div className="border-t border-black h-[22px] flex items-center justify-center text-[9px] font-medium text-black px-0.5">
                   {isEditable ? (
                     <>
@@ -824,7 +883,6 @@ export default function PurchaseDocument({
                   Diketahui
                 </div>
                 <div className="flex-1 min-h-[44px]"></div>
-                {/* Kolom Bawah Nama */}
                 <div className="border-t border-black h-[22px] flex items-center justify-center text-[9px] font-medium text-black px-0.5">
                   {isEditable ? (
                     <>
@@ -849,7 +907,6 @@ export default function PurchaseDocument({
                   Disetujui
                 </div>
                 <div className="flex-1 min-h-[44px]"></div>
-                {/* Kolom Bawah Nama */}
                 <div className="border-t border-black h-[22px] flex items-center justify-center text-[9px] font-medium text-black px-0.5">
                   {isEditable ? (
                     <>
@@ -874,28 +931,42 @@ export default function PurchaseDocument({
         {/* ========================================================
             BATAS SETENGAH HALAMAN A4 (HANYA GARIS PUTUS-PUTUS TANPA TEKS)
             ======================================================== */}
-        <div className="w-full my-2.5 border-t border-dashed border-black/40 print:border-black/50"></div>
+        <div className="w-full my-2 border-t border-dashed border-black/40 print:border-black/50"></div>
 
         {/* ========================================================
-            BAGIAN BAWAH: LAMPIRAN (SETENGAH A4)
+            BAGIAN BAWAH: LAMPIRAN (SETENGAH A4 - TETAP 1 HALAMAN)
             ======================================================== */}
-        <div className="w-full flex-1 flex flex-col min-h-[115mm]">
+        <div className="w-full flex flex-col h-[122mm] max-h-[122mm] overflow-hidden">
           {/* Header Lampiran (Hanya tulis LAMPIRAN) */}
-          <div className="w-full border border-black py-1 font-bold text-[12px] tracking-wider uppercase text-center bg-white flex items-center justify-center relative">
-            <span>LAMPIRAN</span>
-            {isEditable && (
-              <div className="absolute right-2 no-print flex items-center space-x-2">
+          <div className="w-full border border-black py-1 font-bold text-[12px] tracking-wider uppercase text-center bg-white flex items-center justify-between px-3 relative">
+            <div className="w-28 hidden sm:block"></div>
+            <span className="font-bold tracking-wider mx-auto sm:mx-0">LAMPIRAN</span>
+            {isEditable ? (
+              <div className="no-print flex items-center space-x-1.5">
+                <button
+                  type="button"
+                  onClick={handlePasteFromClipboard}
+                  disabled={isUploadingPhoto || photoCount >= 6}
+                  className="flex items-center space-x-1 px-2.5 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[10px] font-medium rounded border border-emerald-300 transition active:scale-95 disabled:opacity-40"
+                  title="Tempel gambar dari clipboard (Ctrl+V)"
+                >
+                  <Clipboard className="w-3 h-3 text-emerald-600" />
+                  <span>Tempel (Ctrl+V)</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploadingPhoto || (photos && photos.length >= 4)}
-                  className="flex items-center space-x-1 px-2 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] font-medium rounded border border-blue-200 transition disabled:opacity-40"
-                  title="Unggah foto referensi barang / sampel"
+                  disabled={isUploadingPhoto || photoCount >= 6}
+                  className="flex items-center space-x-1 px-2.5 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] font-medium rounded border border-blue-300 transition active:scale-95 disabled:opacity-40"
+                  title="Pilih file foto dari komputer"
                 >
-                  <Camera className="w-3 h-3" />
-                  <span>+ Tambah Foto ({photos?.length || 0}/4)</span>
+                  <Camera className="w-3 h-3 text-blue-600" />
+                  <span>+ Upload ({photoCount}/6)</span>
                 </button>
               </div>
+            ) : (
+              <div className="w-28 hidden sm:block"></div>
             )}
           </div>
 
@@ -909,7 +980,7 @@ export default function PurchaseDocument({
             className="hidden"
           />
 
-          {/* Area Kotak Lampiran */}
+          {/* Area Kotak Lampiran - Strictly height-capped so it NEVER overflows into page 2 */}
           <div
             onDragOver={(e) => {
               if (!isEditable) return;
@@ -922,71 +993,97 @@ export default function PurchaseDocument({
               e.preventDefault();
               setIsDragging(false);
               if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                processAndAddFiles(e.dataTransfer.files);
+                processAndAddFiles(Array.from(e.dataTransfer.files));
               }
             }}
-            className={`w-full border-x border-b border-black p-3 flex-1 flex flex-col justify-center items-center transition-colors ${
+            className={`w-full border-x border-b border-black p-2 flex-1 flex flex-col justify-center items-center h-[112mm] max-h-[112mm] overflow-hidden transition-colors ${
               isDragging ? 'bg-blue-50/50' : 'bg-white'
             }`}
           >
             {photos && photos.length > 0 ? (
-              <div className="w-full h-full flex flex-col justify-between">
+              <div className="w-full h-full flex flex-col justify-center overflow-hidden">
+                {/* Dynamic Grid Layout fitting up to 6 photos in a single page */}
                 <div
-                  className={`grid gap-3 w-full flex-1 items-center ${
-                    photos.length === 1
-                      ? 'grid-cols-1 place-items-center'
-                      : photos.length === 2
-                      ? 'grid-cols-2'
-                      : photos.length === 3
-                      ? 'grid-cols-3'
-                      : 'grid-cols-2'
+                  className={`w-full h-full max-h-[106mm] items-center ${
+                    photoCount === 1
+                      ? 'flex justify-center items-center'
+                      : photoCount === 2
+                      ? 'grid grid-cols-2 gap-2 h-full'
+                      : photoCount === 3
+                      ? 'grid grid-cols-3 gap-2 h-full'
+                      : photoCount === 4
+                      ? 'grid grid-cols-2 grid-rows-2 gap-1.5 h-full'
+                      : 'grid grid-cols-3 grid-rows-2 gap-1.5 h-full'
                   }`}
                 >
                   {photos.map((photo, pIdx) => (
                     <div
                       key={photo.id || pIdx}
-                      className="border border-black/20 rounded p-1.5 flex flex-col items-center bg-white w-full h-full justify-between max-h-[98mm] relative group"
+                      className={`border border-black/30 rounded p-1 flex flex-col items-center bg-white justify-between relative group ${
+                        photoCount === 1
+                          ? 'w-full max-w-sm h-full max-h-[104mm]'
+                          : photoCount <= 3
+                          ? 'w-full h-full max-h-[104mm]'
+                          : 'w-full h-full max-h-[51mm]'
+                      }`}
                     >
                       {/* Delete Photo Button (Screen only) */}
                       {isEditable && (
                         <button
                           type="button"
                           onClick={() => handleRemovePhoto(photo.id)}
-                          className="absolute top-2 right-2 p-1 bg-red-600/90 hover:bg-red-700 text-white rounded-full opacity-0 group-hover:opacity-100 transition no-print shadow"
+                          className="absolute top-1 right-1 p-1 bg-red-600/90 hover:bg-red-700 text-white rounded-full opacity-0 group-hover:opacity-100 transition no-print shadow z-10"
                           title="Hapus foto ini"
                         >
-                          <X className="w-3.5 h-3.5" />
+                          <X className="w-3 h-3" />
                         </button>
                       )}
 
-                      <div className="w-full flex-1 flex items-center justify-center overflow-hidden min-h-[65mm] max-h-[82mm]">
+                      {/* Photo Image Container */}
+                      <div
+                        className={`w-full flex-1 flex items-center justify-center overflow-hidden ${
+                          photoCount <= 3 ? 'min-h-[60mm] max-h-[86mm]' : 'min-h-[28mm] max-h-[38mm]'
+                        }`}
+                      >
                         <img
                           src={photo.url}
                           alt={photo.caption || `Lampiran ${pIdx + 1}`}
-                          className="max-h-[80mm] max-w-full object-contain"
+                          className={`max-w-full object-contain ${
+                            photoCount <= 3 ? 'max-h-[84mm]' : 'max-h-[36mm]'
+                          }`}
                         />
                       </div>
 
                       {/* Photo Caption */}
-                      <div className="mt-1 w-full border-t border-gray-200 pt-0.5">
+                      <div className="w-full border-t border-gray-200 pt-0.5 mt-0.5">
                         {isEditable ? (
                           <>
                             <input
                               type="text"
                               value={photo.caption || ''}
                               onChange={(e) => handlePhotoCaptionChange(photo.id, e.target.value)}
-                              placeholder="Keterangan foto..."
-                              className="w-full text-center text-[10px] font-medium text-black bg-transparent hover:bg-blue-50/50 focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 focus:outline-none px-1 py-0.5 rounded transition print:hidden placeholder:text-gray-400 placeholder:italic"
+                              placeholder={`Lampiran ${pIdx + 1}...`}
+                              className={`w-full text-center font-medium text-black bg-transparent hover:bg-blue-50/50 focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 focus:outline-none px-1 py-0 rounded transition print:hidden placeholder:text-gray-400 placeholder:italic ${
+                                photoCount > 3 ? 'text-[8.5px]' : 'text-[9.5px]'
+                              }`}
                             />
                             {photo.caption && (
-                              <div className="hidden print:block text-[10px] font-medium text-center text-black truncate">
+                              <div
+                                className={`hidden print:block font-medium text-center text-black truncate ${
+                                  photoCount > 3 ? 'text-[8.5px]' : 'text-[9.5px]'
+                                }`}
+                              >
                                 {photo.caption}
                               </div>
                             )}
                           </>
                         ) : (
                           photo.caption && (
-                            <div className="text-[10px] font-medium text-center text-black truncate">
+                            <div
+                              className={`text-center font-medium text-black truncate ${
+                                photoCount > 3 ? 'text-[8.5px]' : 'text-[9.5px]'
+                              }`}
+                            >
                               {photo.caption}
                             </div>
                           )
@@ -997,28 +1094,34 @@ export default function PurchaseDocument({
                 </div>
               </div>
             ) : (
-              /* Polos ketika dicetak, tetapi di layar memberi petunjuk upload yang sangat praktis */
-              <div className="w-full flex-1 min-h-[95mm] flex flex-col items-center justify-center">
+              /* Polos ketika dicetak, di layar menjadi dropzone & paste zone interaktif */
+              <div className="w-full h-full flex flex-col items-center justify-center">
                 {isEditable ? (
                   <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className="no-print w-full max-w-md p-6 border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-blue-50/40 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition text-center group"
+                    onClick={handlePasteFromClipboard}
+                    className="no-print w-full max-w-lg p-5 border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-blue-50/30 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition text-center group"
                   >
-                    <div className="p-3 bg-gray-100 group-hover:bg-blue-100 text-gray-500 group-hover:text-blue-600 rounded-full mb-2 transition">
-                      <UploadCloud className="w-6 h-6" />
+                    <div className="flex items-center space-x-2 mb-2">
+                      <div className="p-2.5 bg-emerald-100 text-emerald-600 rounded-full group-hover:scale-105 transition">
+                        <Clipboard className="w-5 h-5" />
+                      </div>
+                      <div className="p-2.5 bg-blue-100 text-blue-600 rounded-full group-hover:scale-105 transition">
+                        <UploadCloud className="w-5 h-5" />
+                      </div>
                     </div>
-                    <div className="text-xs font-semibold text-gray-700 group-hover:text-blue-700">
-                      Klik untuk Unggah Referensi Foto / Lampiran
+
+                    <div className="text-xs font-semibold text-gray-800 group-hover:text-blue-700">
+                      Tempel Screenshot (Ctrl + V) atau Klik untuk Upload Gambar
                     </div>
-                    <div className="text-[11px] text-gray-400 mt-1">
-                      Bisa tarik file langsung ke sini atau tekan <strong>Ctrl + V</strong> (Paste tangkapan layar)
+                    <div className="text-[11px] text-gray-500 mt-1">
+                      Ambil tangkapan layar (<strong>Win + Shift + S</strong>), lalu langsung tekan <strong>Ctrl + V</strong> di sini.
                     </div>
                     <div className="text-[10px] text-gray-400 mt-1">
-                      Maksimal 4 foto &bull; Otomatis dikompresi agar ukuran file minimal
+                      Bisa muat hingga 6 foto sekaligus dalam 1 halaman A4 &bull; Otomatis terkompresi
                     </div>
                   </div>
                 ) : (
-                  <div className="w-full flex-1 min-h-[95mm]"></div>
+                  <div className="w-full h-full"></div>
                 )}
               </div>
             )}
