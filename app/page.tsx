@@ -6,6 +6,7 @@ import {
   getAllPurchases,
   checkSupabasePurchaseTable,
   generateNextNomor,
+  savePurchase,
   SAMPLE_PURCHASE_REQUISITION,
 } from '@/lib/purchaseService';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
@@ -13,7 +14,6 @@ import { LOGO_GAGACLO_SRC } from '@/lib/logoData';
 
 // Components
 import PurchaseDocument from '@/components/purchase/PurchaseDocument';
-import PurchaseFormEditor from '@/components/purchase/PurchaseFormEditor';
 import PurchaseList from '@/components/purchase/PurchaseList';
 import SupabaseSetupModal from '@/components/purchase/SupabaseSetupModal';
 
@@ -24,14 +24,12 @@ import {
   Printer,
   Plus,
   Database,
-  Cloud,
-  CheckCircle2,
-  AlertCircle,
+  Save,
   Sun,
   Moon,
 } from 'lucide-react';
 
-type ActiveTab = 'FORM' | 'LIST' | 'PREVIEW';
+type ActiveTab = 'FORM' | 'LIST';
 
 export default function MainPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('FORM');
@@ -41,6 +39,8 @@ export default function MainPage() {
   const [isTableReady, setIsTableReady] = useState(false);
   const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveNotice, setSaveNotice] = useState<string | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
   // Theme Sync on Mount
@@ -137,6 +137,59 @@ export default function MainPage() {
     };
     setCurrentPurchase(newDoc);
     setActiveTab('FORM');
+    setSaveNotice('Formulir baru berhasil dibuat. Silakan ketik langsung pada formulir.');
+    setTimeout(() => setSaveNotice(null), 3500);
+  };
+
+  const handleGenerateNomor = () => {
+    const nextNomor = generateNextNomor(purchases);
+    setCurrentPurchase((prev) => ({
+      ...prev,
+      nomor: nextNomor,
+    }));
+  };
+
+  const handleLoadSample = () => {
+    if (confirm('Muat contoh data PT Gagaclo? Data formulir saat ini akan digantikan.')) {
+      const nextNomor = generateNextNomor(purchases);
+      setCurrentPurchase({
+        ...SAMPLE_PURCHASE_REQUISITION,
+        id: 'fpp-' + Date.now(),
+        nomor: nextNomor,
+      });
+      setSaveNotice('Contoh data formulir PT Gagaclo berhasil dimuat.');
+      setTimeout(() => setSaveNotice(null), 3500);
+    }
+  };
+
+  const handleSavePurchase = async () => {
+    if (!currentPurchase.nomor || !currentPurchase.nomor.trim()) {
+      alert('Nomor formulir tidak boleh kosong.');
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveNotice(null);
+
+    const result = await savePurchase(currentPurchase);
+    setIsSaving(false);
+
+    if (result.success) {
+      const destination = result.fromCloud
+        ? 'Supabase Cloud Database & Penyimpanan Lokal'
+        : 'Penyimpanan Lokal (Browser Storage)';
+      setSaveNotice(`Formulir ${currentPurchase.nomor} berhasil disimpan ke ${destination}!`);
+      
+      // Update local state without losing focus
+      const updatedList = purchases.some((p) => p.id === currentPurchase.id)
+        ? purchases.map((p) => (p.id === currentPurchase.id ? currentPurchase : p))
+        : [currentPurchase, ...purchases];
+      setPurchases(updatedList);
+
+      setTimeout(() => setSaveNotice(null), 4000);
+    } else {
+      alert('Gagal menyimpan formulir.');
+    }
   };
 
   const handleSelectForEdit = (item: PurchaseRequisition) => {
@@ -146,18 +199,13 @@ export default function MainPage() {
 
   const handleSelectForPreview = (item: PurchaseRequisition) => {
     setCurrentPurchase(item);
-    setActiveTab('PREVIEW');
-  };
-
-  const handleSaved = (savedItem: PurchaseRequisition) => {
-    setCurrentPurchase(savedItem);
-    loadData();
+    setActiveTab('FORM');
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#08090C] text-slate-900 dark:text-[#F5F5F7] flex flex-col transition-colors duration-200">
+    <div className="min-h-screen bg-slate-100 dark:bg-[#08090C] text-slate-900 dark:text-[#F5F5F7] flex flex-col transition-colors duration-200">
       {/* Top Navigation Bar (Hidden during print) */}
-      <header className="no-print sticky top-0 z-40 bg-white/80 dark:bg-[#08090C]/80 backdrop-blur-xl border-b border-slate-200 dark:border-white/10 px-4 py-3">
+      <header className="no-print sticky top-0 z-40 bg-white/90 dark:bg-[#08090C]/90 backdrop-blur-xl border-b border-slate-200 dark:border-white/10 px-4 py-3">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
           {/* Logo & Company Title */}
           <div className="flex items-center space-x-3">
@@ -180,22 +228,22 @@ export default function MainPage() {
           </div>
 
           {/* Navigation Tabs */}
-          <nav className="flex items-center space-x-1 bg-slate-100 dark:bg-zinc-900/90 border border-slate-200 dark:border-zinc-800 p-1 rounded-xl text-xs font-medium">
+          <nav className="flex items-center space-x-1 bg-slate-200/80 dark:bg-zinc-900/90 border border-slate-300 dark:border-zinc-800 p-1 rounded-xl text-xs font-medium">
             <button
               onClick={() => setActiveTab('FORM')}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg transition ${
+              className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg transition ${
                 activeTab === 'FORM'
                   ? 'bg-blue-600 text-white font-semibold shadow'
                   : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <FileText className="w-3.5 h-3.5" />
-              <span>Input FPP</span>
+              <span>Formulir FPP (Input Langsung)</span>
             </button>
 
             <button
               onClick={() => setActiveTab('LIST')}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg transition ${
+              className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg transition ${
                 activeTab === 'LIST'
                   ? 'bg-blue-600 text-white font-semibold shadow'
                   : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
@@ -204,18 +252,6 @@ export default function MainPage() {
               <ListFilter className="w-3.5 h-3.5" />
               <span>Daftar FPP ({purchases.length})</span>
             </button>
-
-            <button
-              onClick={() => setActiveTab('PREVIEW')}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg transition ${
-                activeTab === 'PREVIEW'
-                  ? 'bg-blue-600 text-white font-semibold shadow'
-                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <Printer className="w-3.5 h-3.5" />
-              <span>Pratinjau Cetak A4</span>
-            </button>
           </nav>
 
           {/* Right Status & Fast Action */}
@@ -223,7 +259,7 @@ export default function MainPage() {
             {/* Dark / Light Mode Toggle */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white transition"
+              className="p-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white transition shadow-sm"
               title={theme === 'dark' ? 'Ganti ke Light Mode' : 'Ganti ke Dark Mode'}
             >
               {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
@@ -232,7 +268,7 @@ export default function MainPage() {
             {/* Supabase Status Pill */}
             <button
               onClick={() => setIsSetupModalOpen(true)}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 transition"
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 transition shadow-sm"
               title="Klik untuk konfigurasi dan status database Supabase"
             >
               <Database className="w-3.5 h-3.5 text-emerald-500" />
@@ -259,49 +295,40 @@ export default function MainPage() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 p-4 sm:p-6 max-w-7xl w-full mx-auto">
-        {/* Render Form Editor */}
+      <main className="flex-1 p-3 sm:p-6 max-w-7xl w-full mx-auto flex flex-col items-center">
+        {/* Render Direct Interactive Form Document */}
         {activeTab === 'FORM' && (
-          <PurchaseFormEditor
-            key={currentPurchase.id || 'new-editor'}
-            initialData={currentPurchase}
-            allPurchases={purchases}
-            onSaved={handleSaved}
-            onPreview={handleSelectForPreview}
+          <PurchaseDocument
+            key={currentPurchase.id || 'current-fpp'}
+            data={currentPurchase}
+            onChange={setCurrentPurchase}
+            onSave={handleSavePurchase}
+            onNew={handleAddNewFPP}
+            onLoadSample={handleLoadSample}
+            onGenerateNomor={handleGenerateNomor}
+            isSaving={isSaving}
+            saveNotice={saveNotice}
+            isEditable={true}
           />
         )}
 
         {/* Render List */}
         {activeTab === 'LIST' && (
-          <PurchaseList
-            purchases={purchases}
-            onSelectForEdit={handleSelectForEdit}
-            onSelectForPreview={handleSelectForPreview}
-            onAddNew={handleAddNewFPP}
-            onRefresh={loadData}
-          />
-        )}
-
-        {/* Render Print Preview */}
-        {activeTab === 'PREVIEW' && (
-          <div className="w-full flex flex-col items-center">
-            <div className="no-print w-full max-w-[210mm] mb-3 flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400">
-              <button
-                onClick={() => setActiveTab('FORM')}
-                className="text-blue-500 hover:underline flex items-center space-x-1"
-              >
-                <span>&larr; Kembali ke Editor Formulir</span>
-              </button>
-              <span>Dokumen: <strong>{currentPurchase.nomor || 'Draft'}</strong></span>
-            </div>
-            <PurchaseDocument data={currentPurchase} />
+          <div className="w-full">
+            <PurchaseList
+              purchases={purchases}
+              onSelectForEdit={handleSelectForEdit}
+              onSelectForPreview={handleSelectForPreview}
+              onAddNew={handleAddNewFPP}
+              onRefresh={loadData}
+            />
           </div>
         )}
       </main>
 
       {/* Footer (Hidden during print) */}
       <footer className="no-print border-t border-slate-200 dark:border-white/5 py-4 px-6 text-center text-xs text-slate-500 dark:text-zinc-600 mt-auto">
-        <span>PT Gagaclo • Aplikasi Formulir Permohonan Pembelian Standar Pabrik</span>
+        <span>PT Gagaclo &bull; Aplikasi Formulir Permohonan Pembelian Standar Pabrik (Input Langsung di Formulir)</span>
       </footer>
 
       {/* Supabase Setup Modal */}
