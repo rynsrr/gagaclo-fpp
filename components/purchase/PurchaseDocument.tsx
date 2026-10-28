@@ -93,12 +93,12 @@ export default function PurchaseDocument({ data, hidePrintControls = false }: Pu
         </div>
 
         {/* ================= TOP METADATA BOX ================= */}
-        {/* Uses flex so Nomor/Tanggal has EXACT same 25% width as the Supplier column below */}
+        {/* Uses flex so Nomor/Tanggal has EXACT same 30% width as the Supplier column below */}
         <div className="w-full border border-black flex text-[11px]">
-          {/* Left Column: Jenis (75% width, perfectly aligned with No + Nama Barang + Banyaknya + Taksiran) */}
-          <div className="w-[75%] px-2 py-1.5 border-r border-black flex items-center justify-between text-[11px]">
-            <div className="flex items-center space-x-3 sm:space-x-4">
-              <span className="italic">Jenis :</span>
+          {/* Left Column: Jenis (70% width, perfectly aligned with No + Nama Barang + Banyaknya + Taksiran) */}
+          <div className="w-[70%] px-2.5 py-1.5 border-r border-black flex items-center justify-start gap-3 sm:gap-4 text-[11px]">
+            <div className="flex items-center space-x-2.5 sm:space-x-3">
+              <span className="italic font-normal">Jenis :</span>
               <div className="flex items-center space-x-1 tracking-wide italic">
                 {/* Rutin */}
                 <span
@@ -136,20 +136,22 @@ export default function PurchaseDocument({ data, hidePrintControls = false }: Pu
                 </span>
               </div>
             </div>
-            <span className="text-[10px] text-black italic whitespace-nowrap pl-2">
+            <span className="text-[10px] text-black italic whitespace-nowrap">
               (Lingkar salah satu )
             </span>
           </div>
 
-          {/* Right Column: Nomor & Tanggal (25% width - EXACT SAME WIDTH AS SUPPLIER COLUMN) */}
-          <div className="w-[25%] p-1.5 flex flex-col justify-center text-[11px] space-y-1">
-            <div className="flex items-center">
-              <span className="w-16 font-semibold">Nomor</span>
-              <span>: {nomor || ''}</span>
+          {/* Right Column: Nomor & Tanggal (30% width - EXACT SAME WIDTH AS SUPPLIER COLUMN, diperlebar agar nomor tidak turun) */}
+          <div className="w-[30%] px-2.5 py-1.5 flex flex-col justify-center text-[11px] space-y-1">
+            <div className="flex items-center whitespace-nowrap">
+              <span className="w-14 font-semibold shrink-0">Nomor</span>
+              <span className="mr-1.5">:</span>
+              <span className="font-normal">{nomor || ''}</span>
             </div>
-            <div className="flex items-center">
-              <span className="w-16 font-semibold">Tanggal</span>
-              <span>: {tanggal ? formatShortDate(tanggal) : ''}</span>
+            <div className="flex items-center whitespace-nowrap">
+              <span className="w-14 font-semibold shrink-0">Tanggal</span>
+              <span className="mr-1.5">:</span>
+              <span className="font-normal">{tanggal ? formatShortDate(tanggal) : ''}</span>
             </div>
           </div>
         </div>
@@ -157,19 +159,27 @@ export default function PurchaseDocument({ data, hidePrintControls = false }: Pu
         {/* ================= MAIN TABLE ================= */}
         <div className="w-full border-x border-b border-black">
           <table className="w-full table-fixed border-collapse text-[11px]">
+            <colgroup>
+              <col style={{ width: '5%' }} />
+              <col style={{ width: '31%' }} />
+              <col style={{ width: '10%' }} />
+              <col style={{ width: '12%' }} />
+              <col style={{ width: '12%' }} />
+              <col style={{ width: '30%' }} />
+            </colgroup>
             <thead>
               <tr className="border-b border-black text-center font-bold text-[11px] leading-tight">
-                <th className="border-r border-black p-1.5 w-[5%] font-bold text-center">No</th>
-                <th className="border-r border-black p-1.5 w-[33%] font-bold text-center">Nama Barang</th>
-                <th className="border-r border-black p-1.5 w-[12%] font-bold text-center">Banyaknya</th>
-                <th className="border-r border-black p-0 w-[25%]" colSpan={2}>
+                <th className="border-r border-black p-1.5 font-bold text-center">No</th>
+                <th className="border-r border-black p-1.5 font-bold text-center">Nama Barang</th>
+                <th className="border-r border-black p-1.5 font-bold text-center">Banyaknya</th>
+                <th className="border-r border-black p-0" colSpan={2}>
                   <div className="border-b border-black py-1 font-bold text-center">Taksiran Harga</div>
                   <div className="grid grid-cols-2">
                     <div className="border-r border-black py-1 font-bold text-center">Satuan</div>
                     <div className="py-1 font-bold text-center">Jumlah</div>
                   </div>
                 </th>
-                <th className="p-1.5 w-[25%] font-bold text-center">Supplier</th>
+                <th className="p-1.5 font-bold text-center">Supplier</th>
               </tr>
             </thead>
             <tbody>
@@ -219,11 +229,11 @@ export default function PurchaseDocument({ data, hidePrintControls = false }: Pu
         </div>
 
         {/* ================= URAIAN KEPERLUAN ================= */}
-        <div className="w-full border-x border-b border-black text-[11px]">
-          <div className="p-1.5 font-bold border-b border-black/10">
+        <div className="w-full border-x border-b border-black text-[11px] p-1.5 min-h-[60px]">
+          <div className="font-bold mb-1">
             Uraian Keperluan :
           </div>
-          <div className="px-2 pb-2 min-h-[50px] leading-relaxed whitespace-pre-wrap text-[11px] text-black">
+          <div className="px-0.5 leading-relaxed whitespace-pre-wrap text-[11px] text-black">
             {uraianKeperluan || ''}
           </div>
         </div>

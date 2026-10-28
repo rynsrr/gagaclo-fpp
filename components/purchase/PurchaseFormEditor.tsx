@@ -460,15 +460,29 @@ export default function PurchaseFormEditor({
               4. Tanggal Diterima & Catatan
             </span>
             <div>
-              <label className="block text-[11px] text-zinc-400 mb-1">
-                Tanggal Diterima (oleh Purchasing / Gudang):
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-[11px] text-zinc-400">
+                  Tanggal Diterima (oleh Purchasing / Gudang):
+                </label>
+                {formData.tanggalDiterima && (
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, tanggalDiterima: '' })}
+                    className="text-[10px] text-amber-400 hover:underline font-medium"
+                  >
+                    Kosongkan (Belum Diterima)
+                  </button>
+                )}
+              </div>
               <input
                 type="date"
                 value={formData.tanggalDiterima || ''}
                 onChange={(e) => setFormData({ ...formData, tanggalDiterima: e.target.value })}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 mb-2.5"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 mb-1"
               />
+              <span className="text-[10px] text-zinc-500 block mb-2">
+                Biarkan kosong jika formulir baru diajukan dan belum diterima oleh Purchasing / Gudang.
+              </span>
             </div>
             <div>
               <label className="block text-[11px] text-zinc-400 mb-1">

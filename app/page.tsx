@@ -118,6 +118,7 @@ export default function MainPage() {
       id: 'fpp-' + Date.now(),
       nomor: '',
       tanggal: new Date().toISOString().split('T')[0],
+      tanggalDiterima: '',
       dimintaTanggal: '',
       dimintaOleh: 'ROYAN - RDI',
       items: [

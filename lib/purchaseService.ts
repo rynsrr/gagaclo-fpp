@@ -1,7 +1,7 @@
 import { PurchaseRequisition, PurchaseItem, PurchaseJenis } from '@/types/purchase';
 import { supabase, isSupabaseConfigured } from './supabase';
 
-const STORAGE_KEY = 'gagaclo_purchase_requisitions_v1';
+const STORAGE_KEY = 'gagaclo_purchase_requisitions_v2';
 
 // Sample default requisition matching PT Gagaclo operations
 export const SAMPLE_PURCHASE_REQUISITION: PurchaseRequisition = {
@@ -119,13 +119,27 @@ function mapToDb(item: PurchaseRequisition): any {
 export function getLocalPurchases(): PurchaseRequisition[] {
   if (typeof window === 'undefined') return [SAMPLE_PURCHASE_REQUISITION];
   try {
+    // Clear old legacy cache if present
+    if (localStorage.getItem('gagaclo_purchase_requisitions_v1')) {
+      localStorage.removeItem('gagaclo_purchase_requisitions_v1');
+    }
+
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify([SAMPLE_PURCHASE_REQUISITION]));
       return [SAMPLE_PURCHASE_REQUISITION];
     }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : [SAMPLE_PURCHASE_REQUISITION];
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      // Ensure any legacy sample has blank tanggalDiterima and nomor
+      return parsed.map((item: PurchaseRequisition) => {
+        if (item.id === 'fpp-sample-001') {
+          return { ...item, tanggalDiterima: '', nomor: '' };
+        }
+        return item;
+      });
+    }
+    return [SAMPLE_PURCHASE_REQUISITION];
   } catch (err) {
     console.error('Failed to read from localStorage:', err);
     return [SAMPLE_PURCHASE_REQUISITION];
