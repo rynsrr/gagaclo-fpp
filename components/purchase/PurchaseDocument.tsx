@@ -236,10 +236,10 @@ export default function PurchaseDocument({ data, hidePrintControls = false }: Pu
           <div className="w-full border-x border-b border-black flex text-[10px]">
             {/* Left Column: Tanggal Diterima & Catatan (EXACT 58% - LURUS SEJAJAR DENGAN PEMBATAS SATUAN/JUMLAH) */}
             <div className="w-[58%] border-r border-black flex flex-col justify-between min-h-[85px]">
-              {/* Row 1: Tanggal Diterima */}
-              <div className="border-b border-black p-1 font-normal">
+              {/* Row 1: Tanggal Diterima (Tinggi sama persis h-[22px] dengan Diterima, Diminta, dst.) */}
+              <div className="border-b border-black h-[22px] px-1.5 flex items-center font-normal text-[10px]">
                 Tanggal Diterima :{' '}
-                <span className="font-normal">
+                <span className="font-normal ml-1">
                   {tanggalDiterima && tanggalDiterima.trim() !== '' ? formatShortDate(tanggalDiterima) : ''}
                 </span>
               </div>
@@ -257,7 +257,9 @@ export default function PurchaseDocument({ data, hidePrintControls = false }: Pu
             <div className="w-[42%] grid grid-cols-4 text-center">
               {/* 1. Diterima */}
               <div className="border-r border-black flex flex-col justify-between">
-                <div className="border-b border-black py-0.5 font-semibold text-[9.5px]">Diterima</div>
+                <div className="border-b border-black h-[22px] flex items-center justify-center font-semibold text-[9.5px]">
+                  Diterima
+                </div>
                 <div className="flex-1 min-h-[44px]"></div>
                 {/* Kolom Bawah Khusus untuk Diisi Nama */}
                 <div className="border-t border-black h-[22px] flex items-center justify-center text-[9px] font-medium text-black px-0.5 truncate">
@@ -267,7 +269,9 @@ export default function PurchaseDocument({ data, hidePrintControls = false }: Pu
 
               {/* 2. Diminta (Tanda Tangan Asli ROYAN - RDI & Nama di Bawah) */}
               <div className="border-r border-black flex flex-col justify-between">
-                <div className="border-b border-black py-0.5 font-semibold text-[9.5px]">Diminta</div>
+                <div className="border-b border-black h-[22px] flex items-center justify-center font-semibold text-[9.5px]">
+                  Diminta
+                </div>
                 <div className="flex-1 min-h-[44px] flex items-center justify-center p-0.5">
                   <img
                     src={SIGNATURE_ROYAN_SRC}
@@ -284,7 +288,9 @@ export default function PurchaseDocument({ data, hidePrintControls = false }: Pu
 
               {/* 3. Diketahui */}
               <div className="border-r border-black flex flex-col justify-between">
-                <div className="border-b border-black py-0.5 font-semibold text-[9.5px]">Diketahui</div>
+                <div className="border-b border-black h-[22px] flex items-center justify-center font-semibold text-[9.5px]">
+                  Diketahui
+                </div>
                 <div className="flex-1 min-h-[44px]"></div>
                 {/* Kolom Bawah Khusus untuk Diisi Nama */}
                 <div className="border-t border-black h-[22px] flex items-center justify-center text-[9px] font-medium text-black px-0.5 truncate">
@@ -294,7 +300,9 @@ export default function PurchaseDocument({ data, hidePrintControls = false }: Pu
 
               {/* 4. Disetujui */}
               <div className="flex flex-col justify-between">
-                <div className="border-b border-black py-0.5 font-semibold text-[9.5px]">Disetujui</div>
+                <div className="border-b border-black h-[22px] flex items-center justify-center font-semibold text-[9.5px]">
+                  Disetujui
+                </div>
                 <div className="flex-1 min-h-[44px]"></div>
                 {/* Kolom Bawah Khusus untuk Diisi Nama */}
                 <div className="border-t border-black h-[22px] flex items-center justify-center text-[9px] font-medium text-black px-0.5 truncate">
