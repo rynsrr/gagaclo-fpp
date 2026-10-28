@@ -113,10 +113,11 @@ export default function MainPage() {
 
   // Handlers
   const handleAddNewFPP = () => {
+    const nextNomor = generateNextNomor(purchases);
     const newDoc: PurchaseRequisition = {
       ...DEFAULT_PURCHASE_REQUISITION,
       id: 'fpp-' + Date.now(),
-      nomor: '',
+      nomor: nextNomor,
       tanggal: new Date().toISOString().split('T')[0],
       tanggalDiterima: '',
       dimintaTanggal: '',

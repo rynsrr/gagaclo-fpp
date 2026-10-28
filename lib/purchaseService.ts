@@ -6,7 +6,7 @@ const STORAGE_KEY = 'gagaclo_purchase_requisitions_v2';
 // Sample default requisition matching PT Gagaclo operations
 export const SAMPLE_PURCHASE_REQUISITION: PurchaseRequisition = {
   id: 'fpp-sample-001',
-  nomor: '',
+  nomor: 'ROYAN-0001',
   tanggal: '2026-10-28',
   jenis: 'Rutin',
   items: [
@@ -134,7 +134,7 @@ export function getLocalPurchases(): PurchaseRequisition[] {
       // Ensure any legacy sample has blank tanggalDiterima and nomor
       return parsed.map((item: PurchaseRequisition) => {
         if (item.id === 'fpp-sample-001') {
-          return { ...item, tanggalDiterima: '', nomor: '' };
+          return { ...item, tanggalDiterima: '', nomor: item.nomor || 'ROYAN-0001' };
         }
         return item;
       });
@@ -155,25 +155,27 @@ export function saveLocalPurchases(list: PurchaseRequisition[]): void {
   }
 }
 
-// Generate new sequential nomor FPP: FPP/YYYY/MM/xxx
+// Generate new sequential nomor FPP: ROYAN-0001, ROYAN-0002, dst.
 export function generateNextNomor(list: PurchaseRequisition[]): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const prefix = `FPP/${year}/${month}/`;
-
+  const prefix = 'ROYAN-';
   let maxNum = 0;
-  for (const item of list) {
-    if (item.nomor && item.nomor.startsWith(prefix)) {
-      const part = item.nomor.slice(prefix.length);
-      const parsed = parseInt(part, 10);
-      if (!isNaN(parsed) && parsed > maxNum) {
-        maxNum = parsed;
+
+  if (Array.isArray(list)) {
+    for (const item of list) {
+      if (item.nomor) {
+        const trimmed = item.nomor.trim();
+        const match = trimmed.match(/^ROYAN-(\d+)/i);
+        if (match) {
+          const parsed = parseInt(match[1], 10);
+          if (!isNaN(parsed) && parsed > maxNum) {
+            maxNum = parsed;
+          }
+        }
       }
     }
   }
 
-  const nextNum = String(maxNum + 1).padStart(3, '0');
+  const nextNum = String(maxNum + 1).padStart(4, '0');
   return `${prefix}${nextNum}`;
 }
 

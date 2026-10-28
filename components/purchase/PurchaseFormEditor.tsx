@@ -35,12 +35,18 @@ export default function PurchaseFormEditor({
   onPreview,
 }: PurchaseFormEditorProps) {
   const [formData, setFormData] = useState<PurchaseRequisition>(() => {
-    if (initialData && initialData.id) return initialData;
+    if (initialData && initialData.id) {
+      return {
+        ...initialData,
+        nomor: initialData.nomor || generateNextNomor(allPurchases),
+      };
+    }
     return {
       ...DEFAULT_PURCHASE_REQUISITION,
       id: 'fpp-' + Date.now(),
-      nomor: '',
+      nomor: generateNextNomor(allPurchases),
       tanggal: new Date().toISOString().split('T')[0],
+      tanggalDiterima: '',
       dimintaTanggal: '',
       dimintaOleh: 'ROYAN - RDI',
     };
@@ -124,18 +130,21 @@ export default function PurchaseFormEditor({
       setFormData({
         ...SAMPLE_PURCHASE_REQUISITION,
         id: 'fpp-' + Date.now(),
-        nomor: '',
+        nomor: SAMPLE_PURCHASE_REQUISITION.nomor || generateNextNomor(allPurchases),
       });
     }
   };
 
   const handleReset = () => {
-    if (confirm('Kosongkan semua isian formulir?')) {
+    if (confirm('Kosongkan isian formulir dan buat nomor baru?')) {
       setFormData({
         ...DEFAULT_PURCHASE_REQUISITION,
         id: 'fpp-' + Date.now(),
-        nomor: '',
+        nomor: generateNextNomor(allPurchases),
         tanggal: new Date().toISOString().split('T')[0],
+        tanggalDiterima: '',
+        dimintaTanggal: '',
+        dimintaOleh: 'ROYAN - RDI',
       });
     }
   };
@@ -239,16 +248,17 @@ export default function PurchaseFormEditor({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Nomor FPP (Boleh dikosongkan) */}
+            {/* Nomor FPP (Otomatis: ROYAN-0001, dst) */}
             <div>
               <label className="block text-xs font-medium text-zinc-300 mb-1.5 flex items-center justify-between">
-                <span>Nomor Formulir (Boleh Kosong)</span>
+                <span>Nomor Formulir (Otomatis)</span>
                 <button
                   type="button"
                   onClick={handleGenerateNewNomor}
-                  className="text-[10px] text-blue-400 hover:underline"
+                  className="text-[10px] text-blue-400 hover:text-blue-300 hover:underline font-medium"
+                  title="Generate nomor urut berikutnya"
                 >
-                  Auto-Gen
+                  Generate Baru
                 </button>
               </label>
               <div className="relative">
@@ -257,8 +267,8 @@ export default function PurchaseFormEditor({
                   type="text"
                   value={formData.nomor}
                   onChange={(e) => setFormData({ ...formData, nomor: e.target.value })}
-                  placeholder="(Boleh dikosongkan)"
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
+                  placeholder="ROYAN-0001"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500 font-mono font-medium"
                 />
               </div>
             </div>
