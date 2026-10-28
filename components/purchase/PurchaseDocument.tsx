@@ -409,19 +409,18 @@ export default function PurchaseDocument({
         <div className="w-full flex flex-col">
           {/* ================= HEADER KOP SURAT ================= */}
           <div className="flex items-center justify-start gap-4 pb-1.5">
-            {/* Logo P.T. GAGACLO */}
+            {/* Logo P.T. GAGACLO (Official Wordmark) */}
             <div className="flex-shrink-0">
               <img
                 src={LOGO_GAGACLO_SRC}
                 alt="P.T. GAGACLO"
-                className="h-10 w-auto object-contain block"
-                style={{ maxHeight: '42px' }}
+                className="h-11 w-auto object-contain block"
+                style={{ maxHeight: '44px' }}
               />
             </div>
 
-            {/* Company Details */}
-            <div className="text-left text-[10px] leading-tight text-black">
-              <div className="font-bold text-[10.5px]">PT Gagaclo</div>
+            {/* Alamat di samping logo P.T. GAGACLO */}
+            <div className="text-left text-[9.5px] leading-tight text-black">
               <div>JL. Tambakaji Timur No.1,</div>
               <div>Semarang 50185, Central Java, Indonesia</div>
               <div>Tel: +62 24 866 1188 Fax: +62 24 866 2562</div>
