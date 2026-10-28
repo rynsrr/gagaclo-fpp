@@ -18,12 +18,6 @@ body {
   font-family: var(--font-great-vibes), var(--font-dancing-script), 'Great Vibes', 'Dancing Script', 'Brush Script MT', cursive;
 }
 
-/* Condensed header font utility */
-.font-condensed {
-  font-family: var(--font-condensed), 'Arial Narrow', 'Roboto Condensed', 'Liberation Sans Narrow', sans-serif-condensed, sans-serif;
-  font-stretch: condensed;
-}
-
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

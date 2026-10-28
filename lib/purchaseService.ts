@@ -100,7 +100,7 @@ function mapToDb(item: PurchaseRequisition): any {
     tanggal: item.tanggal,
     jenis: item.jenis,
     items: item.items,
-    photos: [], // Sesuai permintaan: Foto lampiran tidak disimpan di database (hanya untuk print sesi aktif)
+    photos: item.photos || [],
     uraian_keperluan: item.uraianKeperluan,
     tanggal_diterima: item.tanggalDiterima || null,
     catatan: item.catatan || null,
@@ -152,9 +152,7 @@ export function getLocalPurchases(): PurchaseRequisition[] {
 export function saveLocalPurchases(list: PurchaseRequisition[]): void {
   if (typeof window === 'undefined') return;
   try {
-    // Foto lampiran tidak disimpan di storage permanen (hanya untuk print sesi aktif)
-    const lightweightList = list.map(({ photos, ...rest }) => ({ ...rest, photos: [] }));
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(lightweightList));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
   } catch (err) {
     console.error('Failed to write to localStorage:', err);
   }

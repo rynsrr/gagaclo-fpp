@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Great_Vibes, Dancing_Script, Roboto_Condensed } from 'next/font/google';
+import { Great_Vibes, Dancing_Script } from 'next/font/google';
 import './globals.css';
 
 const greatVibes = Great_Vibes({
@@ -16,16 +16,9 @@ const dancingScript = Dancing_Script({
   display: 'swap',
 });
 
-const robotoCondensed = Roboto_Condensed({
-  weight: ['400', '700'],
-  subsets: ['latin'],
-  variable: '--font-condensed',
-  display: 'swap',
-});
-
 export const metadata: Metadata = {
-  title: 'Formulir Permohonan Pembelian | PT GAGACLO',
-  description: 'Aplikasi Pembuatan & Pencetakan Formulir Permohonan Pembelian (FPP) PT GAGACLO terintegrasi Supabase, GitHub, dan Vercel.',
+  title: 'Formulir Permohonan Pembelian | PT Gagaclo',
+  description: 'Aplikasi Pembuatan & Pencetakan Formulir Permohonan Pembelian (FPP) PT Gagaclo terintegrasi Supabase, GitHub, dan Vercel.',
 };
 
 export default function RootLayout({
@@ -37,13 +30,13 @@ export default function RootLayout({
     <html
       lang="id"
       suppressHydrationWarning
-      className={`dark ${greatVibes.variable} ${dancingScript.variable} ${robotoCondensed.variable}`}
+      className={`dark ${greatVibes.variable} ${dancingScript.variable}`}
     >
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Great+Vibes&family=Roboto+Condensed:wght@400;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Great+Vibes&display=swap"
           rel="stylesheet"
         />
         <script

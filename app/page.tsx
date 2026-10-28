@@ -21,8 +21,10 @@ import SupabaseSetupModal from '@/components/purchase/SupabaseSetupModal';
 import {
   FileText,
   ListFilter,
+  Printer,
   Plus,
   Database,
+  Save,
   Sun,
   Moon,
 } from 'lucide-react';
@@ -32,26 +34,7 @@ type ActiveTab = 'FORM' | 'LIST';
 export default function MainPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('FORM');
   const [purchases, setPurchases] = useState<PurchaseRequisition[]>([]);
-  const [currentPurchase, setCurrentPurchase] = useState<PurchaseRequisition>(() => ({
-    ...DEFAULT_PURCHASE_REQUISITION,
-    id: 'fpp-' + Date.now(),
-    nomor: 'ROYAN-0001',
-    tanggal: new Date().toISOString().split('T')[0],
-    tanggalDiterima: '',
-    photos: [],
-    dimintaOleh: 'ROYAN - RDI',
-    items: [
-      {
-        id: 'item-1',
-        no: 1,
-        namaBarang: '',
-        banyaknya: '',
-        hargaSatuan: 0,
-        jumlah: 0,
-        supplier: '',
-      },
-    ],
-  }));
+  const [currentPurchase, setCurrentPurchase] = useState<PurchaseRequisition>(SAMPLE_PURCHASE_REQUISITION);
   const [isCloudReady, setIsCloudReady] = useState(false);
   const [isTableReady, setIsTableReady] = useState(false);
   const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
@@ -95,40 +78,10 @@ export default function MainPage() {
     const { data } = await getAllPurchases();
     if (data && data.length > 0) {
       setPurchases(data);
-      const nextNomor = generateNextNomor(data);
-      setCurrentPurchase((prev) => {
-        // If user already typed items, keep them
-        if (prev.items.some((it) => it.namaBarang && it.namaBarang.trim())) {
-          return prev;
-        }
-        return {
-          ...DEFAULT_PURCHASE_REQUISITION,
-          id: 'fpp-' + Date.now(),
-          nomor: nextNomor,
-          tanggal: new Date().toISOString().split('T')[0],
-          tanggalDiterima: '',
-          photos: [],
-          dimintaOleh: 'ROYAN - RDI',
-          items: [
-            {
-              id: 'item-1',
-              no: 1,
-              namaBarang: '',
-              banyaknya: '',
-              hargaSatuan: 0,
-              jumlah: 0,
-              supplier: '',
-            },
-          ],
-        };
-      });
+      setCurrentPurchase(data[0]);
     } else {
-      const initialNomor = generateNextNomor([]);
-      setPurchases([]);
-      setCurrentPurchase((prev) => ({
-        ...prev,
-        nomor: initialNomor,
-      }));
+      setPurchases([SAMPLE_PURCHASE_REQUISITION]);
+      setCurrentPurchase(SAMPLE_PURCHASE_REQUISITION);
     }
 
     setIsLoading(false);
@@ -184,19 +137,27 @@ export default function MainPage() {
     };
     setCurrentPurchase(newDoc);
     setActiveTab('FORM');
-    setSaveNotice(`Formulir baru ${nextNomor} siap diisi.`);
+    setSaveNotice('Formulir baru berhasil dibuat. Silakan ketik langsung pada formulir.');
     setTimeout(() => setSaveNotice(null), 3500);
   };
 
+  const handleGenerateNomor = () => {
+    const nextNomor = generateNextNomor(purchases);
+    setCurrentPurchase((prev) => ({
+      ...prev,
+      nomor: nextNomor,
+    }));
+  };
+
   const handleLoadSample = () => {
-    if (confirm('Muat contoh data PT GAGACLO? Data formulir saat ini akan digantikan.')) {
+    if (confirm('Muat contoh data PT Gagaclo? Data formulir saat ini akan digantikan.')) {
       const nextNomor = generateNextNomor(purchases);
       setCurrentPurchase({
         ...SAMPLE_PURCHASE_REQUISITION,
         id: 'fpp-' + Date.now(),
         nomor: nextNomor,
       });
-      setSaveNotice('Contoh data formulir PT GAGACLO berhasil dimuat.');
+      setSaveNotice('Contoh data formulir PT Gagaclo berhasil dimuat.');
       setTimeout(() => setSaveNotice(null), 3500);
     }
   };
@@ -217,9 +178,9 @@ export default function MainPage() {
       const destination = result.fromCloud
         ? 'Supabase Cloud Database & Penyimpanan Lokal'
         : 'Penyimpanan Lokal (Browser Storage)';
-      setSaveNotice(`Formulir ${currentPurchase.nomor} berhasil disimpan ke ${destination}! (Lampiran foto hanya untuk cetak fisik)`);
+      setSaveNotice(`Formulir ${currentPurchase.nomor} berhasil disimpan ke ${destination}!`);
       
-      // Update local state without losing current photos in view
+      // Update local state without losing focus
       const updatedList = purchases.some((p) => p.id === currentPurchase.id)
         ? purchases.map((p) => (p.id === currentPurchase.id ? currentPurchase : p))
         : [currentPurchase, ...purchases];
@@ -344,6 +305,7 @@ export default function MainPage() {
             onSave={handleSavePurchase}
             onNew={handleAddNewFPP}
             onLoadSample={handleLoadSample}
+            onGenerateNomor={handleGenerateNomor}
             isSaving={isSaving}
             saveNotice={saveNotice}
             isEditable={true}
@@ -366,7 +328,7 @@ export default function MainPage() {
 
       {/* Footer (Hidden during print) */}
       <footer className="no-print border-t border-slate-200 dark:border-white/5 py-4 px-6 text-center text-xs text-slate-500 dark:text-zinc-600 mt-auto">
-        <span>PT GAGACLO &bull; Aplikasi Formulir Permohonan Pembelian Standar Pabrik (Input Langsung di Formulir)</span>
+        <span>PT Gagaclo &bull; Aplikasi Formulir Permohonan Pembelian Standar Pabrik (Input Langsung di Formulir)</span>
       </footer>
 
       {/* Supabase Setup Modal */}
