@@ -419,9 +419,15 @@ export default function PurchaseDocument({
               />
             </div>
 
-            {/* Company Details */}
-            <div className="text-left text-[10px] leading-tight text-black">
-              <div className="font-bold text-[10.5px]">PT Gagaclo</div>
+            {/* Company Details (Condensed Header PT GAGACLO matching physical scan) */}
+            <div
+              className="text-left text-[9.5px] leading-[1.18] text-black tracking-tight"
+              style={{
+                fontFamily: "var(--font-condensed), 'Arial Narrow', 'Roboto Condensed', 'Liberation Sans Narrow', sans-serif-condensed, sans-serif",
+                fontStretch: 'condensed',
+              }}
+            >
+              <div className="font-bold text-[11px] tracking-tight uppercase">PT GAGACLO</div>
               <div>JL. Tambakaji Timur No.1,</div>
               <div>Semarang 50185, Central Java, Indonesia</div>
               <div>Tel: +62 24 866 1188 Fax: +62 24 866 2562</div>
@@ -501,36 +507,13 @@ export default function PurchaseDocument({
 
             {/* Right Column: Nomor & Tanggal (30% width) */}
             <div className="w-[30%] px-2.5 py-1 flex flex-col justify-center text-[10.5px] space-y-0.5">
-              {/* Nomor */}
+              {/* Nomor (Otomatis) */}
               <div className="flex items-center whitespace-nowrap">
                 <span className="w-14 font-semibold shrink-0">Nomor</span>
                 <span className="mr-1.5">:</span>
-                {isEditable ? (
-                  <div className="flex items-center space-x-1 flex-1">
-                    <input
-                      type="text"
-                      value={nomor}
-                      onChange={(e) => updateField('nomor', e.target.value)}
-                      placeholder="ROYAN-0001"
-                      className="font-mono font-medium bg-transparent hover:bg-blue-50/50 focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 focus:outline-none px-1 py-0 w-28 text-[10.5px] border-b border-dashed border-gray-300 hover:border-black transition print:hidden"
-                    />
-                    {onGenerateNomor && (
-                      <button
-                        type="button"
-                        onClick={onGenerateNomor}
-                        className="p-0.5 text-blue-600 hover:text-blue-800 rounded transition no-print"
-                        title="Generate nomor urut berikutnya"
-                      >
-                        <RefreshCw className="w-3 h-3" />
-                      </button>
-                    )}
-                    <span className="hidden print:inline font-mono font-normal">
-                      {nomor || 'ROYAN-0001'}
-                    </span>
-                  </div>
-                ) : (
-                  <span className="font-normal font-mono">{nomor || 'ROYAN-0001'}</span>
-                )}
+                <span className="font-normal font-mono text-[10.5px] select-all">
+                  {nomor || 'ROYAN-0001'}
+                </span>
               </div>
 
               {/* Tanggal */}
@@ -1127,7 +1110,7 @@ export default function PurchaseDocument({
                       Ambil tangkapan layar (<strong>Win + Shift + S</strong>), lalu langsung tekan <strong>Ctrl + V</strong> di sini.
                     </div>
                     <div className="text-[10px] text-gray-400 mt-1">
-                      Bisa muat hingga 6 foto sekaligus dalam 1 halaman A4 &bull; Otomatis terkompresi
+                      Lampiran hanya untuk kebutuhan cetak (tidak disimpan ke database) &bull; Maks. 6 foto
                     </div>
                   </div>
                 ) : (
