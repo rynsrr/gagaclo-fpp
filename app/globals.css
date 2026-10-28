@@ -13,6 +13,11 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Signature script font utility */
+.font-signature {
+  font-family: var(--font-great-vibes), var(--font-dancing-script), 'Great Vibes', 'Dancing Script', 'Brush Script MT', cursive;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

@@ -851,13 +851,23 @@ export default function PurchaseDocument({
                 <div className="border-b border-black h-[22px] flex items-center justify-center font-semibold text-[9.5px]">
                   Diminta
                 </div>
-                <div className="flex-1 min-h-[44px] flex items-center justify-center p-0.5">
+                <div className="flex-1 min-h-[44px] flex flex-col items-center justify-center p-0.5 relative select-none overflow-hidden">
+                  {/* Tanda Tangan Stroke / Paraf */}
                   <img
                     src={SIGNATURE_ROYAN_SRC}
                     alt="Tanda Tangan Diminta"
-                    className="h-10 w-auto object-contain block mix-blend-multiply"
-                    style={{ maxHeight: '42px' }}
+                    className="h-7 w-auto object-contain block mix-blend-multiply opacity-80"
+                    style={{ maxHeight: '30px' }}
                   />
+                  {/* Nama Royan dengan Style Signature */}
+                  <span
+                    className="font-signature text-[21px] font-bold text-black tracking-wide leading-none -mt-3.5 transform -rotate-3 select-none"
+                    style={{
+                      fontFamily: "var(--font-great-vibes), 'Great Vibes', var(--font-dancing-script), 'Dancing Script', 'Brush Script MT', cursive",
+                    }}
+                  >
+                    Royan
+                  </span>
                 </div>
                 <div className="border-t border-black h-[22px] flex items-center justify-center text-[9px] font-medium text-black px-0.5">
                   {isEditable ? (
