@@ -14,6 +14,12 @@ export interface PurchaseItem {
   supplier: string;
 }
 
+export interface PurchasePhoto {
+  id: string;
+  url: string;
+  caption?: string;
+}
+
 export interface PurchaseRequisition {
   id: string;
   nomor: string;
@@ -23,6 +29,7 @@ export interface PurchaseRequisition {
   uraianKeperluan: string;
   tanggalDiterima?: string;
   catatan?: string;
+  photos?: PurchasePhoto[];
   
   // Signers & Approval flow
   dimintaOleh?: string;
@@ -59,6 +66,7 @@ export const DEFAULT_PURCHASE_REQUISITION: PurchaseRequisition = {
   uraianKeperluan: '',
   tanggalDiterima: '',
   catatan: '',
+  photos: [],
   dimintaOleh: 'ROYAN - RDI',
   dimintaTanggal: '',
   diketahuiOleh: '',

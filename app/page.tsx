@@ -120,6 +120,7 @@ export default function MainPage() {
       nomor: nextNomor,
       tanggal: new Date().toISOString().split('T')[0],
       tanggalDiterima: '',
+      photos: [],
       dimintaTanggal: '',
       dimintaOleh: 'ROYAN - RDI',
       items: [

@@ -19,7 +19,40 @@ import {
   CheckCircle2,
   Calendar,
   Hash,
+  Camera,
+  Image as ImageIcon,
 } from 'lucide-react';
+
+function compressImage(file: File, maxWidth = 1200, quality = 0.82): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        } else {
+          resolve(event.target?.result as string);
+        }
+      };
+      img.onerror = () => resolve(event.target?.result as string);
+    };
+    reader.onerror = (err) => reject(err);
+  });
+}
 
 interface PurchaseFormEditorProps {
   initialData?: PurchaseRequisition;
@@ -123,6 +156,46 @@ export default function PurchaseFormEditor({
   const handleGenerateNewNomor = () => {
     const nextNomor = generateNextNomor(allPurchases);
     setFormData((prev) => ({ ...prev, nomor: nextNomor }));
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newPhotos = [...(formData.photos || [])];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.type.startsWith('image/')) {
+        try {
+          const dataUrl = await compressImage(file);
+          newPhotos.push({
+            id: 'photo-' + Date.now() + '-' + (newPhotos.length + 1),
+            url: dataUrl,
+            caption: file.name.replace(/\.[^/.]+$/, ''),
+          });
+        } catch (err) {
+          console.error('Failed to read image:', err);
+        }
+      }
+    }
+    setFormData((prev) => ({ ...prev, photos: newPhotos }));
+    e.target.value = '';
+  };
+
+  const handleRemovePhoto = (photoId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      photos: (prev.photos || []).filter((p) => p.id !== photoId),
+    }));
+  };
+
+  const handlePhotoCaptionChange = (photoId: string, caption: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      photos: (prev.photos || []).map((p) =>
+        p.id === photoId ? { ...p, caption } : p
+      ),
+    }));
   };
 
   const handleLoadSample = () => {
@@ -509,11 +582,81 @@ export default function PurchaseFormEditor({
           </div>
         </div>
 
-        {/* SECTION 4: PENGESAHAN (DIMINTA OLEH) */}
+        {/* SECTION 5: REFERENSI FOTO / LAMPIRAN (BAGIAN BAWAH A4) */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-3">
+            <div>
+              <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 block">
+                5. Referensi Foto / Lampiran Pendukung (Setengah A4 Bawah)
+              </span>
+              <span className="text-[11px] text-zinc-500">
+                Foto akan otomatis dicetak pada setengah bagian bawah halaman A4.
+              </span>
+            </div>
+            <div>
+              <label className="cursor-pointer inline-flex items-center space-x-2 px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 rounded-xl text-xs font-medium transition-all active:scale-95">
+                <Camera className="w-3.5 h-3.5" />
+                <span>+ Unggah Foto</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Photo Preview Grid in Editor */}
+          {formData.photos && formData.photos.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {formData.photos.map((photo, idx) => (
+                <div
+                  key={photo.id || idx}
+                  className="relative group bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 flex flex-col justify-between"
+                >
+                  <div className="relative w-full h-36 bg-zinc-900 rounded-lg overflow-hidden flex items-center justify-center mb-2">
+                    <img
+                      src={photo.url}
+                      alt={photo.caption || `Foto ${idx + 1}`}
+                      className="max-h-full max-w-full object-contain"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemovePhoto(photo.id)}
+                      className="absolute top-1.5 right-1.5 p-1 bg-red-600/80 hover:bg-red-600 text-white rounded-md transition-all shadow"
+                      title="Hapus foto ini"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    value={photo.caption || ''}
+                    onChange={(e) => handlePhotoCaptionChange(photo.id, e.target.value)}
+                    placeholder="Keterangan foto (misal: Sampel Kain)"
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="border border-dashed border-zinc-800 rounded-xl p-6 text-center text-zinc-500 flex flex-col items-center justify-center">
+              <Camera className="w-8 h-8 mb-2 text-zinc-600 stroke-[1.5]" />
+              <p className="text-xs text-zinc-400 font-medium">Belum ada foto referensi yang diunggah</p>
+              <p className="text-[11px] text-zinc-600 mt-0.5">
+                Klik tombol &quot;+ Unggah Foto&quot; di atas untuk melampirkan foto sampel atau biarkan kosong jika foto fisik akan ditempel manual di kertas A4.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* SECTION 6: PENGESAHAN (DIMINTA OLEH) */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-4">
           <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
             <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              5. Pengesahan Pemohon (Diminta)
+              6. Pengesahan Pemohon (Diminta)
             </span>
             <span className="text-xs text-zinc-500">
               Kolom Diterima, Diketahui, dan Disetujui dibiarkan kosong untuk tanda tangan fisik

@@ -50,6 +50,7 @@ export const SAMPLE_PURCHASE_REQUISITION: PurchaseRequisition = {
   uraianKeperluan: 'Pengadaan bahan baku dan perlengkapan produksi garmen untuk pemenuhan PO Buyer batch November 2026.',
   tanggalDiterima: '',
   catatan: 'Prioritas pengiriman kain katun maksimal tanggal 2 November 2026.',
+  photos: [],
   dimintaOleh: 'ROYAN - RDI',
   dimintaTanggal: '',
   diketahuiOleh: '',
@@ -75,6 +76,7 @@ function mapFromDb(row: any): PurchaseRequisition {
     uraianKeperluan: row.uraian_keperluan || '',
     tanggalDiterima: row.tanggal_diterima || '',
     catatan: row.catatan || '',
+    photos: Array.isArray(row.photos) ? row.photos : [],
     dimintaOleh: row.diminta_oleh || '',
     dimintaTanggal: row.diminta_tanggal || '',
     diketahuiOleh: row.diketahui_oleh || '',
@@ -98,6 +100,7 @@ function mapToDb(item: PurchaseRequisition): any {
     tanggal: item.tanggal,
     jenis: item.jenis,
     items: item.items,
+    photos: item.photos || [],
     uraian_keperluan: item.uraianKeperluan,
     tanggal_diterima: item.tanggalDiterima || null,
     catatan: item.catatan || null,
@@ -240,10 +243,18 @@ export async function savePurchase(item: PurchaseRequisition): Promise<{ success
 
   if (isSupabaseConfigured() && supabase) {
     try {
-      const dbPayload = mapToDb(toSave);
-      const { error } = await supabase
+      let dbPayload = mapToDb(toSave);
+      let { error } = await supabase
         .from('purchase_requisitions')
         .upsert(dbPayload, { onConflict: 'id' });
+
+      if (error && error.message && error.message.includes('photos')) {
+        const { photos, ...rest } = dbPayload;
+        const retryRes = await supabase
+          .from('purchase_requisitions')
+          .upsert(rest, { onConflict: 'id' });
+        error = retryRes.error;
+      }
 
       if (!error) {
         return { success: true, fromCloud: true };
