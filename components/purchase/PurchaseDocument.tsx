@@ -306,9 +306,9 @@ export default function PurchaseDocument({ data, hidePrintControls = false }: Pu
         </div>
 
         {/* ========================================================
-            BATAS SETENGAH HALAMAN A4 (GARIS PUTUS-PUTUS)
+            BATAS SETENGAH HALAMAN A4 (HANYA GARIS PUTUS-PUTUS TANPA TEKS)
             ======================================================== */}
-        <div className="w-full my-2 border-t border-dashed border-black/30"></div>
+        <div className="w-full my-2.5 border-t border-dashed border-black/40 print:border-black/50"></div>
 
         {/* ========================================================
             BAGIAN BAWAH: LAMPIRAN (SETENGAH A4)
