@@ -104,6 +104,17 @@ export default function PurchaseDocument({
     });
   };
 
+  const itemNameInputs = useRef<Array<HTMLInputElement | null>>([]);
+  const pendingItemFocus = useRef<number | null>(null);
+  useEffect(() => {
+    if (pendingItemFocus.current === null) return;
+    const input = itemNameInputs.current[pendingItemFocus.current];
+    if (input) {
+      input.focus();
+      pendingItemFocus.current = null;
+    }
+  }, [items]);
+
   // Add new item row
   const handleAddItemRow = () => {
     if (!onChange) return;
@@ -519,6 +530,13 @@ export default function PurchaseDocument({
                         <>
                           <input
                             type="text"
+                            ref={(input) => { itemNameInputs.current[index] = input; }}
+                            onKeyDown={(event) => {
+                              if (event.key !== 'Enter' || event.nativeEvent.isComposing || event.repeat || !onChange) return;
+                              event.preventDefault();
+                              pendingItemFocus.current = dataRef.current.items.length;
+                              handleAddItemRow();
+                            }}
                             value={item.namaBarang}
                             onChange={(e) => handleItemChange(index, 'namaBarang', e.target.value)}
                             placeholder="Ketik nama barang..."
