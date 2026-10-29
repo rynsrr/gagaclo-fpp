@@ -193,8 +193,8 @@ export default function MainPage() {
             </div>
             <div className="hidden sm:block h-6 w-px bg-slate-200 dark:bg-zinc-800" />
             <div className="hidden sm:flex items-center space-x-2">
-              <span className="text-[11px] text-slate-500 dark:text-zinc-400">
-                Formulir Permohonan Pembelian
+              <span className="text-sm sm:text-base font-semibold uppercase tracking-wide text-slate-700 dark:text-zinc-200">
+                FORMULIR PERMOHONAN PEMBELIAN
               </span>
             </div>
           </div>
