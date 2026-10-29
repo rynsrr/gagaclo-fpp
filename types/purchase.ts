@@ -67,7 +67,7 @@ export const DEFAULT_PURCHASE_REQUISITION: PurchaseRequisition = {
   tanggalDiterima: '',
   catatan: '',
   photos: [],
-  dimintaOleh: 'ROYAN - RDI',
+  dimintaOleh: 'ROYAN',
   dimintaTanggal: '',
   diketahuiOleh: '',
   diketahuiTanggal: '',

@@ -47,7 +47,7 @@ export default function PurchaseDocument({
     tanggalDiterima = '',
     catatan = '',
     photos = [],
-    dimintaOleh = 'ROYAN - RDI',
+    dimintaOleh = 'ROYAN',
     diketahuiOleh = '',
     disetujuiOleh = '',
     diterimaOleh = '',
@@ -771,7 +771,7 @@ export default function PurchaseDocument({
                 </div>
               </div>
 
-              {/* 2. Diminta (Tanda Tangan Asli ROYAN - RDI & Nama di Bawah) */}
+              {/* 2. Diminta (Tanda Tangan Asli ROYAN & Nama di Bawah) */}
               <div className="border-r border-black flex flex-col justify-between">
                 <div className="border-b border-black h-[22px] flex items-center justify-center font-semibold text-[9.5px]">
                   Diminta
@@ -801,13 +801,13 @@ export default function PurchaseDocument({
                         type="text"
                         value={dimintaOleh}
                         onChange={(e) => updateField('dimintaOleh', e.target.value)}
-                        placeholder="ROYAN - RDI"
+                        placeholder="ROYAN"
                         className="w-full text-center bg-transparent hover:bg-blue-50/40 focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 focus:outline-none text-[9px] font-medium print:hidden rounded"
                       />
-                      <span className="hidden print:inline truncate">{dimintaOleh || 'ROYAN - RDI'}</span>
+                      <span className="hidden print:inline truncate">{dimintaOleh || 'ROYAN'}</span>
                     </>
                   ) : (
-                    <span className="truncate">{dimintaOleh || 'ROYAN - RDI'}</span>
+                    <span className="truncate">{dimintaOleh || 'ROYAN'}</span>
                   )}
                 </div>
               </div>
