@@ -184,7 +184,7 @@ export default function MainPage() {
       {/* Top Navigation Bar (Hidden during print) */}
       <header className="no-print sticky top-0 z-40 bg-white/90 dark:bg-[#08090C]/90 backdrop-blur-xl border-b border-slate-200 dark:border-white/10 px-4 py-3">
         <div className="max-w-7xl mx-auto space-y-3">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
           {/* Logo & Company Title */}
           <div className="flex items-center space-x-3">
             <div className="flex items-center">
@@ -200,6 +200,38 @@ export default function MainPage() {
 
           {/* Right Status & Fast Action */}
           <div className="flex items-center space-x-2">
+<div className="no-print flex items-center gap-2" role="group" aria-label="Aksi formulir">
+                <button
+                    type="button"
+                    onClick={handleAddNewFPP}
+                    className="inline-flex items-center justify-center w-10 h-10 shrink-0 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition active:scale-95 disabled:opacity-50"
+                    aria-label="Formulir baru"
+                    title="Buat formulir baru dengan nomor urut berikutnya"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="inline-flex items-center justify-center w-10 h-10 shrink-0 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition active:scale-95 disabled:opacity-50"
+                  aria-label="Cetak / PDF"
+                  title="Cetak langsung atau simpan sebagai PDF A4 (Pasti 1 Halaman)"
+                >
+                  <Printer className="w-4 h-4" />
+                </button>
+
+                <button
+                    type="button"
+                    onClick={handleSavePurchase}
+                    disabled={isSaving}
+                    className="inline-flex items-center justify-center w-10 h-10 shrink-0 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition active:scale-95 disabled:opacity-50"
+                    aria-label={isSaving ? 'Menyimpan...' : 'Simpan FPP'}
+                    aria-busy={isSaving}
+                    title="Simpan formulir ke database Supabase dan penyimpanan lokal"
+                  >
+                    <Save className={`w-4 h-4 ${isSaving ? 'animate-pulse' : ''}`} />
+                  </button>
+              </div>
             {/* Dark / Light Mode Toggle */}
             <button
               onClick={toggleTheme}
@@ -239,38 +271,6 @@ export default function MainPage() {
         {activeTab === 'FORM' && (
           <div className="w-full grid grid-cols-1 xl:grid-cols-[minmax(0,210mm)_minmax(0,1fr)] gap-6 items-start print:block">
           <div className="w-full max-w-[210mm] mx-auto">
-              <div className="no-print flex justify-end items-center gap-2 mb-3" role="group" aria-label="Aksi formulir">
-                <button
-                    type="button"
-                    onClick={handleAddNewFPP}
-                    className="inline-flex items-center justify-center w-10 h-10 border border-slate-200 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-800 text-xs font-medium rounded-lg transition"
-                    aria-label="Formulir baru"
-                    title="Buat formulir baru dengan nomor urut berikutnya"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                <button
-                  type="button"
-                  onClick={() => window.print()}
-                  className="inline-flex items-center justify-center w-10 h-10 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-sm shadow-indigo-900/30 transition active:scale-95 hover:shadow-md hover:shadow-indigo-900/40"
-                  aria-label="Cetak / PDF"
-                  title="Cetak langsung atau simpan sebagai PDF A4 (Pasti 1 Halaman)"
-                >
-                  <Printer className="w-4 h-4" />
-                </button>
-
-                <button
-                    type="button"
-                    onClick={handleSavePurchase}
-                    disabled={isSaving}
-                    className="inline-flex items-center justify-center w-10 h-10 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl shadow-sm shadow-emerald-900/30 transition active:scale-95 disabled:opacity-50 hover:shadow-md hover:shadow-emerald-900/40"
-                    aria-label={isSaving ? 'Menyimpan...' : 'Simpan FPP'}
-                    aria-busy={isSaving}
-                    title="Simpan formulir ke database Supabase dan penyimpanan lokal"
-                  >
-                    <Save className={`w-4 h-4 ${isSaving ? 'animate-pulse' : ''}`} />
-                  </button>
-              </div>
           <PurchaseDocument
             key={currentPurchase.id || 'current-fpp'}
             data={currentPurchase}

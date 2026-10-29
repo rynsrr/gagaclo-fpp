@@ -11,7 +11,7 @@ export default function PurchaseSummary({ purchases }: { purchases: PurchaseRequ
     { label: 'Sudah Diterima', count: received, description: 'Penerimaan tercatat' },
   ];
   return (
-    <aside aria-label="Ringkasan FPP" className="no-print min-w-0 grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-1 gap-3 content-start xl:pt-[52px]">
+    <aside aria-label="Ringkasan FPP" className="no-print min-w-0 grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-1 gap-3 content-start">
       {cards.map((card) => (
         <div key={card.label} className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-5 shadow-sm">
           <div className="text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-300">{card.label}</div>
