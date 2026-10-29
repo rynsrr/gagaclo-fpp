@@ -325,11 +325,6 @@ export default function MainPage() {
         )}
       </main>
 
-      {/* Footer (Hidden during print) */}
-      <footer className="no-print border-t border-slate-200 dark:border-white/5 py-4 px-6 text-center text-xs text-slate-500 dark:text-zinc-600 mt-auto">
-        <span>PT Gagaclo &bull; Aplikasi Formulir Permohonan Pembelian Standar Pabrik (Input Langsung di Formulir)</span>
-      </footer>
-
       {/* Supabase Setup Modal */}
       <SupabaseSetupModal
         isOpen={isSetupModalOpen}
