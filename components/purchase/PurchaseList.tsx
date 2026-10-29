@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { PurchaseRequisition, PurchaseJenis } from '@/types/purchase';
 import { formatShortDate, deletePurchase } from '@/lib/purchaseService';
 import {
@@ -29,16 +29,6 @@ export default function PurchaseList({
   onRefresh,
 }: PurchaseListProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  // Statistics
-  const stats = useMemo(() => {
-    const totalCount = purchases.length;
-    const receivedCount = purchases.filter((purchase) =>
-      Boolean(purchase.tanggalDiterima?.trim()) ||
-      purchase.status === 'Diterima' || purchase.status === 'Selesai'
-    ).length;
-    return { totalCount, receivedCount, pendingCount: totalCount - receivedCount };
-  }, [purchases]);
 
   const handleDelete = async (id: string, nomor: string) => {
     if (confirm(`Apakah Anda yakin ingin menghapus formulir ${nomor}?`)) {
@@ -75,33 +65,6 @@ export default function PurchaseList({
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6">
-      {/* STATS OVERVIEW */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
-          <div className="text-[11px] text-zinc-400 uppercase tracking-wider font-semibold">
-            Total Permohonan
-          </div>
-          <div className="text-2xl font-bold text-white mt-1">{stats.totalCount}</div>
-          <div className="text-[10px] text-zinc-500 mt-0.5">Dokumen terdaftar</div>
-        </div>
-
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
-          <div className="text-[11px] text-amber-400 uppercase tracking-wider font-semibold">
-            Belum Diterima
-          </div>
-          <div className="text-2xl font-bold text-amber-300 mt-1">{stats.pendingCount}</div>
-          <div className="text-[10px] text-zinc-500 mt-0.5">Menunggu penerimaan</div>
-        </div>
-
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
-          <div className="text-[11px] text-emerald-400 uppercase tracking-wider font-semibold">
-            Sudah Diterima
-          </div>
-          <div className="text-2xl font-bold text-emerald-400 mt-1">{stats.receivedCount}</div>
-          <div className="text-[10px] text-zinc-500 mt-0.5">Penerimaan tercatat</div>
-        </div>
-      </div>
-
       {/* TABLE */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
         {purchases.length === 0 ? (

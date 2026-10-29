@@ -13,6 +13,7 @@ import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 // Components
 import PurchaseDocument from '@/components/purchase/PurchaseDocument';
 import PurchaseList from '@/components/purchase/PurchaseList';
+import PurchaseSummary from '@/components/purchase/PurchaseSummary';
 import SupabaseSetupModal from '@/components/purchase/SupabaseSetupModal';
 
 // Icons
@@ -253,7 +254,8 @@ export default function MainPage() {
       <main className="flex-1 p-3 sm:p-6 max-w-7xl w-full mx-auto flex flex-col items-center">
         {/* Render Direct Interactive Form Document */}
         {activeTab === 'FORM' && (
-          <div className="w-full max-w-[210mm]">
+          <div className="w-full grid grid-cols-1 xl:grid-cols-[minmax(0,210mm)_minmax(0,1fr)] gap-6 items-start print:block">
+          <div className="w-full max-w-[210mm] mx-auto">
               <div className="no-print flex justify-end items-center gap-2 mb-3" role="group" aria-label="Aksi formulir">
                 <button
                     type="button"
@@ -295,6 +297,8 @@ export default function MainPage() {
             saveNotice={saveNotice}
             isEditable={true}
           />
+          </div>
+          <PurchaseSummary purchases={purchases} />
           </div>
         )}
 
