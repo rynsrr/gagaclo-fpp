@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { PurchaseRequisition, PurchaseJenis } from '@/types/purchase';
-import { formatShortDate, deletePurchase } from '@/lib/purchaseService';
+import { deletePurchase } from '@/lib/purchaseService';
 import {
   Plus,
   Edit3,
@@ -10,7 +10,6 @@ import {
   FileText,
   AlertTriangle,
   ArrowUpDown,
-  ExternalLink,
 } from 'lucide-react';
 
 interface PurchaseListProps {
@@ -40,33 +39,14 @@ export default function PurchaseList({
   };
 
   const getJenisBadge = (jenis: PurchaseJenis) => {
-    switch (jenis) {
-      case 'Segera':
-        return (
-          <span className="px-2 py-0.5 text-[11px] font-bold rounded-full bg-red-900/40 text-red-300 border border-red-500/30">
-            Segera
-          </span>
-        );
-      case 'Non Rutin':
-        return (
-          <span className="px-2 py-0.5 text-[11px] font-bold rounded-full bg-amber-900/40 text-amber-300 border border-amber-500/30">
-            Non Rutin
-          </span>
-        );
-      case 'Rutin':
-      default:
-        return (
-          <span className="px-2 py-0.5 text-[11px] font-bold rounded-full bg-blue-900/40 text-blue-300 border border-blue-500/30">
-            Rutin
-          </span>
-        );
-    }
+    const labels = { Rutin: 'R', 'Non Rutin': 'NR', Segera: 'S', '': '—' };
+    return <span title={jenis || 'Belum dipilih'} aria-label={jenis || 'Belum dipilih'} className="inline-block rounded border border-zinc-300 dark:border-zinc-700 px-1 py-0.5 font-semibold">{labels[jenis]}</span>;
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       {/* TABLE */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden">
         {purchases.length === 0 ? (
           <div className="p-12 text-center space-y-3">
             <FileText className="w-10 h-10 text-zinc-600 mx-auto" />
@@ -81,14 +61,21 @@ export default function PurchaseList({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-zinc-300">
+            <table className="w-full table-fixed text-left text-xs text-zinc-700 dark:text-zinc-300">
+              <colgroup>
+                <col style={{ width: '25%' }} />
+                <col style={{ width: '20%' }} />
+                <col style={{ width: '11%' }} />
+                <col style={{ width: '27%' }} />
+                <col style={{ width: '17%' }} />
+              </colgroup>
               <thead>
-                <tr className="border-b border-zinc-800 text-zinc-400 font-semibold bg-zinc-950/80">
-                  <th className="py-3 px-4">Nomor FPP</th>
-                  <th className="py-3 px-3">Tanggal</th>
-                  <th className="py-3 px-3">Jenis</th>
-                  <th className="py-3 px-3">Ringkasan Barang</th>
-                  <th className="py-3 px-4 text-center">Aksi</th>
+                <tr className="border-b border-zinc-800 text-zinc-400 font-semibold bg-zinc-100 dark:bg-zinc-950/80">
+                  <th className="py-2 px-1.5">Nomor FPP</th>
+                  <th className="py-2 px-1.5">Tanggal</th>
+                  <th className="py-2 px-1.5">Jenis</th>
+                  <th className="py-2 px-1.5">Barang</th>
+                  <th className="py-2 px-1.5 text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/60">
@@ -99,31 +86,30 @@ export default function PurchaseList({
                   return (
                     <tr key={item.id} className="hover:bg-zinc-800/30 transition">
                       {/* Nomor */}
-                      <td className="py-3 px-4 font-bold text-white whitespace-nowrap">
+                      <td className="py-2 px-1.5 font-bold text-black dark:text-white whitespace-nowrap">
                         <button
                           onClick={() => onSelectForPreview(item)}
-                          className="hover:text-blue-400 flex items-center space-x-1.5"
+                          className="hover:text-blue-400 block w-full truncate text-left"
                           title="Klik untuk pratinjau cetak A4"
                         >
                           <span>{item.nomor || 'Draft'}</span>
-                          <ExternalLink className="w-3 h-3 text-zinc-500" />
                         </button>
                       </td>
 
                       {/* Tanggal */}
-                      <td className="py-3 px-3 text-zinc-400 whitespace-nowrap">
-                        {formatShortDate(item.tanggal)}
+                      <td className="py-2 px-1.5 text-zinc-400 whitespace-nowrap">
+                        {item.tanggal ? item.tanggal.slice(0, 10).split('-').reverse().map((part, index) => index === 2 ? part.slice(-2) : part).join('/') : '—'}
                       </td>
 
                       {/* Jenis */}
-                      <td className="py-3 px-3 whitespace-nowrap">
+                      <td className="py-2 px-1.5 whitespace-nowrap">
                         {getJenisBadge(item.jenis)}
                       </td>
 
                       {/* Ringkasan Barang */}
-                      <td className="py-3 px-3 max-w-[240px]">
+                      <td className="py-2 px-1.5 max-w-[240px]">
                         {firstItem ? (
-                          <div className="truncate text-zinc-200">
+                          <div className="truncate text-zinc-800 dark:text-zinc-200">
                             <span>{firstItem.namaBarang || 'Tanpa nama'}</span>
                             {remainingCount > 0 && (
                               <span className="text-[10px] text-zinc-500 ml-1.5 bg-zinc-800 px-1.5 py-0.5 rounded">
@@ -142,12 +128,12 @@ export default function PurchaseList({
                       </td>
 
                       {/* Actions */}
-                      <td className="py-3 px-4 text-center whitespace-nowrap">
-                        <div className="flex items-center justify-center space-x-1">
+                      <td className="py-2 px-1.5 text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-0.5">
                           {/* Edit */}
                           <button
                             onClick={() => onSelectForEdit(item)}
-                            className="p-1.5 text-zinc-400 hover:text-blue-400 hover:bg-blue-950/30 rounded-lg transition"
+                            className="p-1 text-zinc-400 hover:text-blue-400 hover:bg-blue-950/30 rounded-lg transition"
                             title="Edit Formulir"
                           >
                             <Edit3 className="w-4 h-4" />
@@ -157,7 +143,7 @@ export default function PurchaseList({
                           <button
                             onClick={() => handleDelete(item.id, item.nomor)}
                             disabled={deletingId === item.id}
-                            className="p-1.5 text-zinc-400 hover:text-red-400 hover:bg-red-950/30 rounded-lg transition disabled:opacity-50"
+                            className="p-1 text-zinc-400 hover:text-red-400 hover:bg-red-950/30 rounded-lg transition disabled:opacity-50"
                             title="Hapus Formulir"
                           >
                             <Trash2 className="w-4 h-4" />
