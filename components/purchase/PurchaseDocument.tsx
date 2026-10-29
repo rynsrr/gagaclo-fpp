@@ -485,10 +485,10 @@ export default function PurchaseDocument({
             <table className="w-full table-fixed border-collapse text-[10.5px]">
               <colgroup>
                 <col style={{ width: '5%' }} />
-                <col style={{ width: '29%' }} />
-                <col style={{ width: '12%' }} />
-                <col style={{ width: '12%' }} />
-                <col style={{ width: '12%' }} />
+                <col style={{ width: '36%' }} />
+                <col style={{ width: '9%' }} />
+                <col style={{ width: '10%' }} />
+                <col style={{ width: '10%' }} />
                 <col style={{ width: '30%' }} />
               </colgroup>
               <thead>
