@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { PurchaseRequisition, PurchaseJenis } from '@/types/purchase';
 import { deletePurchase } from '@/lib/purchaseService';
 import {
+  Search,
   Plus,
   Edit3,
   Trash2,
@@ -29,6 +30,17 @@ export default function PurchaseList({
 }: PurchaseListProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const filteredPurchases = useMemo(() => {
+    const query = searchQuery.trim().toLocaleLowerCase('id-ID');
+    if (!query) return purchases;
+    return purchases.filter((purchase) => [
+      purchase.nomor, purchase.tanggal, purchase.jenis,
+      purchase.dimintaOleh, purchase.uraianKeperluan,
+      ...purchase.items.flatMap((item) => [item.namaBarang, item.supplier]),
+    ].some((value) => value?.toLocaleLowerCase('id-ID').includes(query)));
+  }, [purchases, searchQuery]);
+
   const handleDelete = async (id: string, nomor: string) => {
     if (confirm(`Apakah Anda yakin ingin menghapus formulir ${nomor}?`)) {
       setDeletingId(id);
@@ -44,10 +56,21 @@ export default function PurchaseList({
   };
 
   return (
-    <div className="w-full min-w-0 space-y-6">
+    <div className="w-full min-w-0 space-y-3">
+      <div className="relative">
+        <Search aria-hidden="true" className="absolute left-3 top-3 w-4 h-4 text-zinc-500" />
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          aria-label="Cari FPP"
+          placeholder="Cari FPP, barang, supplier, pemohon..."
+          className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 pl-9 pr-3 py-2.5 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+        />
+      </div>
       {/* TABLE */}
       <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden">
-        {purchases.length === 0 ? (
+        {filteredPurchases.length === 0 ? (
           <div className="p-12 text-center space-y-3">
             <FileText className="w-10 h-10 text-zinc-600 mx-auto" />
             <div className="text-zinc-400 text-sm">Tidak ada formulir permohonan yang sesuai.</div>
@@ -79,7 +102,7 @@ export default function PurchaseList({
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/60">
-                {purchases.map((item) => {
+                {filteredPurchases.map((item) => {
                   const firstItem = item.items?.[0];
                   const remainingCount = (item.items?.length || 0) - 1;
 
