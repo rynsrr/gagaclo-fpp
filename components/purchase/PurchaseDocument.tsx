@@ -555,6 +555,12 @@ export default function PurchaseDocument({
                         <>
                           <input
                             type="text"
+                            onKeyDown={(event) => {
+                              if (event.key !== 'Enter' || event.nativeEvent.isComposing || event.repeat || !onChange) return;
+                              event.preventDefault();
+                              pendingItemFocus.current = dataRef.current.items.length;
+                              handleAddItemRow();
+                            }}
                             value={item.banyaknya}
                             onChange={(e) => handleItemChange(index, 'banyaknya', e.target.value)}
                             placeholder="e.g. 10 Pcs"
