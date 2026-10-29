@@ -25,6 +25,7 @@ import {
   Plus,
   Database,
   Save,
+  Sparkles,
   Sun,
   Moon,
 } from 'lucide-react';
@@ -292,6 +293,80 @@ export default function MainPage() {
             </button>
           </div>
         </div>
+        {activeTab === 'FORM' && (
+          <div className="max-w-7xl mx-auto mt-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-slate-800/90 to-slate-900/90 dark:from-zinc-900 dark:to-zinc-950 border border-slate-600/40 dark:border-zinc-700/60 rounded-xl p-3 px-4 text-white backdrop-blur-sm">
+            {/* Left: Mode indicator + hint */}
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex items-center gap-2 pl-1">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
+                </span>
+                <span className="text-sm font-semibold text-white tracking-tight">
+                  Input Langsung di Formulir
+                </span>
+              </div>
+              <span className="hidden md:inline text-xs text-zinc-400/80 before:content-['|'] before:mr-3 before:text-zinc-600">
+                Ketik langsung &bull; Paste foto (Ctrl+V) &bull; 1 Halaman A4
+              </span>
+            </div>
+
+            {/* Right: Action buttons */}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Secondary actions group */}
+              <div className="flex items-center gap-1.5 bg-white/5 dark:bg-white/[0.03] rounded-xl p-1 border border-white/10 dark:border-white/[0.06]">
+                <button
+                    type="button"
+                    onClick={handleLoadSample}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-zinc-300 hover:text-white hover:bg-white/10 text-xs font-medium rounded-lg transition"
+                    title="Muat contoh data PT Gagaclo"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span className="hidden md:inline">Contoh Data</span>
+                  </button>
+
+                <button
+                    type="button"
+                    onClick={handleAddNewFPP}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-zinc-300 hover:text-white hover:bg-white/10 text-xs font-medium rounded-lg transition"
+                    title="Buat formulir baru dengan nomor urut berikutnya"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Baru</span>
+                  </button>
+              </div>
+
+              {/* Divider */}
+              <div className="hidden sm:block w-px h-6 bg-white/10 dark:bg-white/10" />
+
+              {/* Primary actions group */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-sm shadow-indigo-900/30 transition active:scale-95 hover:shadow-md hover:shadow-indigo-900/40"
+                  title="Cetak langsung atau simpan sebagai PDF A4 (Pasti 1 Halaman)"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Cetak / PDF</span>
+                </button>
+
+                <button
+                    type="button"
+                    onClick={handleSavePurchase}
+                    disabled={isSaving}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl shadow-sm shadow-emerald-900/30 transition active:scale-95 disabled:opacity-50 hover:shadow-md hover:shadow-emerald-900/40"
+                    title="Simpan formulir ke database Supabase dan penyimpanan lokal"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>{isSaving ? 'Menyimpan...' : 'Simpan FPP'}</span>
+                  </button>
+              </div>
+            </div>
+          </div>
+          </div>
+        )}
       </header>
 
       {/* Main Content Area */}
@@ -303,10 +378,7 @@ export default function MainPage() {
             data={currentPurchase}
             onChange={setCurrentPurchase}
             onSave={handleSavePurchase}
-            onNew={handleAddNewFPP}
-            onLoadSample={handleLoadSample}
             onGenerateNomor={handleGenerateNomor}
-            isSaving={isSaving}
             saveNotice={saveNotice}
             isEditable={true}
           />
