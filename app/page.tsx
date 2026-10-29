@@ -296,22 +296,6 @@ export default function MainPage() {
         {activeTab === 'FORM' && (
           <div className="max-w-7xl mx-auto mt-3">
           <div className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-slate-800/90 to-slate-900/90 dark:from-zinc-900 dark:to-zinc-950 border border-slate-600/40 dark:border-zinc-700/60 rounded-xl p-3 px-4 text-white backdrop-blur-sm">
-            {/* Left: Mode indicator + hint */}
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="flex items-center gap-2 pl-1">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
-                </span>
-                <span className="text-sm font-semibold text-white tracking-tight">
-                  Input Langsung di Formulir
-                </span>
-              </div>
-              <span className="hidden md:inline text-xs text-zinc-400/80 before:content-['|'] before:mr-3 before:text-zinc-600">
-                Ketik langsung &bull; Paste foto (Ctrl+V) &bull; 1 Halaman A4
-              </span>
-            </div>
-
             {/* Right: Action buttons */}
             <div className="flex flex-wrap items-center gap-2">
               {/* Secondary actions group */}
