@@ -66,12 +66,11 @@ export default function PurchaseList({
   // Statistics
   const stats = useMemo(() => {
     const totalCount = purchases.length;
-    const rutinCount = purchases.filter((p) => p.jenis === 'Rutin').length;
-    const nonRutinCount = purchases.filter((p) => p.jenis === 'Non Rutin').length;
-    const segeraCount = purchases.filter((p) => p.jenis === 'Segera').length;
-    const totalBiaya = purchases.reduce((acc, curr) => acc + (curr.totalTaksiran || 0), 0);
-
-    return { totalCount, rutinCount, nonRutinCount, segeraCount, totalBiaya };
+    const receivedCount = purchases.filter((purchase) =>
+      Boolean(purchase.tanggalDiterima?.trim()) ||
+      purchase.status === 'Diterima' || purchase.status === 'Selesai'
+    ).length;
+    return { totalCount, receivedCount, pendingCount: totalCount - receivedCount };
   }, [purchases]);
 
   const handleDelete = async (id: string, nomor: string) => {
@@ -121,7 +120,7 @@ export default function PurchaseList({
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6">
       {/* STATS OVERVIEW */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
           <div className="text-[11px] text-zinc-400 uppercase tracking-wider font-semibold">
             Total Permohonan
@@ -131,29 +130,19 @@ export default function PurchaseList({
         </div>
 
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
-          <div className="text-[11px] text-blue-400 uppercase tracking-wider font-semibold">
-            Rutin
+          <div className="text-[11px] text-amber-400 uppercase tracking-wider font-semibold">
+            Belum Diterima
           </div>
-          <div className="text-2xl font-bold text-blue-300 mt-1">{stats.rutinCount}</div>
-          <div className="text-[10px] text-zinc-500 mt-0.5">Kebutuhan berkala</div>
-        </div>
-
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
-          <div className="text-[11px] text-red-400 uppercase tracking-wider font-semibold">
-            Segera (Urgent)
-          </div>
-          <div className="text-2xl font-bold text-red-300 mt-1">{stats.segeraCount}</div>
-          <div className="text-[10px] text-zinc-500 mt-0.5">Prioritas tinggi</div>
+          <div className="text-2xl font-bold text-amber-300 mt-1">{stats.pendingCount}</div>
+          <div className="text-[10px] text-zinc-500 mt-0.5">Menunggu penerimaan</div>
         </div>
 
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
           <div className="text-[11px] text-emerald-400 uppercase tracking-wider font-semibold">
-            Total Taksiran Biaya
+            Sudah Diterima
           </div>
-          <div className="text-lg font-bold text-emerald-400 mt-1 truncate">
-            {formatRupiah(stats.totalBiaya)}
-          </div>
-          <div className="text-[10px] text-zinc-500 mt-0.5">Nilai pengadaan</div>
+          <div className="text-2xl font-bold text-emerald-400 mt-1">{stats.receivedCount}</div>
+          <div className="text-[10px] text-zinc-500 mt-0.5">Penerimaan tercatat</div>
         </div>
       </div>
 
