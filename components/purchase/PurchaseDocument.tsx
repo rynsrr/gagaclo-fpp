@@ -947,9 +947,8 @@ export default function PurchaseDocument({
             ======================================================== */}
         <div className="w-full flex flex-col h-[122mm] max-h-[122mm] overflow-hidden">
           {/* Header Lampiran (Hanya tulis LAMPIRAN) */}
-          <div className="w-full border border-black py-1 font-bold text-[12px] tracking-wider uppercase text-center bg-white flex items-center justify-between px-3 relative">
-            <div className="w-28 hidden sm:block"></div>
-            <span className="font-bold tracking-wider mx-auto sm:mx-0">LAMPIRAN</span>
+          <div className="w-full border border-black py-1 font-bold text-[12px] tracking-wider uppercase text-left bg-white flex items-center justify-between px-3 relative">
+            <span className="font-bold tracking-wider text-left">LAMPIRAN</span>
             {isEditable ? (
               <div className="no-print flex items-center space-x-1.5">
                 <button
@@ -974,9 +973,7 @@ export default function PurchaseDocument({
                   <span>+ Upload ({photoCount}/6)</span>
                 </button>
               </div>
-            ) : (
-              <div className="w-28 hidden sm:block"></div>
-            )}
+            ) : null}
           </div>
 
           {/* Hidden File Input for Image Upload */}
