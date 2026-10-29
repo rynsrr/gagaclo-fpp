@@ -4,8 +4,6 @@ import React, { useState, useMemo } from 'react';
 import { PurchaseRequisition, PurchaseJenis } from '@/types/purchase';
 import { formatRupiah, formatShortDate, deletePurchase } from '@/lib/purchaseService';
 import {
-  Search,
-  Filter,
   Plus,
   Printer,
   Edit3,
@@ -32,36 +30,7 @@ export default function PurchaseList({
   onAddNew,
   onRefresh,
 }: PurchaseListProps) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterJenis, setFilterJenis] = useState<string>('ALL');
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  // Filtered and searched data
-  const filteredPurchases = useMemo(() => {
-    return purchases.filter((item) => {
-      // Filter jenis
-      if (filterJenis !== 'ALL' && item.jenis !== filterJenis) {
-        return false;
-      }
-
-      // Search query
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        const inNomor = (item.nomor || '').toLowerCase().includes(query);
-        const inUraian = (item.uraianKeperluan || '').toLowerCase().includes(query);
-        const inDiminta = (item.dimintaOleh || '').toLowerCase().includes(query);
-        const inItems = item.items?.some(
-          (it) =>
-            (it.namaBarang || '').toLowerCase().includes(query) ||
-            (it.supplier || '').toLowerCase().includes(query)
-        );
-
-        return inNomor || inUraian || inDiminta || inItems;
-      }
-
-      return true;
-    });
-  }, [purchases, filterJenis, searchQuery]);
 
   // Statistics
   const stats = useMemo(() => {
@@ -146,50 +115,9 @@ export default function PurchaseList({
         </div>
       </div>
 
-      {/* FILTER & SEARCH BAR */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-zinc-900 border border-zinc-800 p-4 rounded-2xl">
-        {/* Search */}
-        <div className="relative flex-1 min-w-[240px]">
-          <Search className="w-4 h-4 absolute left-3 top-2.5 text-zinc-500" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Cari nomor FPP, nama barang, supplier, pemohon..."
-            className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500"
-          />
-        </div>
-
-        {/* Filter Jenis */}
-        <div className="flex items-center space-x-1.5 bg-zinc-950 p-1 rounded-xl border border-zinc-800 text-xs">
-          {['ALL', 'Rutin', 'Non Rutin', 'Segera'].map((jenis) => (
-            <button
-              key={jenis}
-              onClick={() => setFilterJenis(jenis)}
-              className={`px-3 py-1.5 rounded-lg transition font-medium ${
-                filterJenis === jenis
-                  ? 'bg-zinc-800 text-white shadow'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              {jenis === 'ALL' ? 'Semua Jenis' : jenis}
-            </button>
-          ))}
-        </div>
-
-        {/* Add new button */}
-        <button
-          onClick={onAddNew}
-          className="flex items-center space-x-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl shadow-sm transition active:scale-95"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Buat FPP Baru</span>
-        </button>
-      </div>
-
       {/* TABLE */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-        {filteredPurchases.length === 0 ? (
+        {purchases.length === 0 ? (
           <div className="p-12 text-center space-y-3">
             <FileText className="w-10 h-10 text-zinc-600 mx-auto" />
             <div className="text-zinc-400 text-sm">Tidak ada formulir permohonan yang sesuai.</div>
@@ -216,7 +144,7 @@ export default function PurchaseList({
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/60">
-                {filteredPurchases.map((item) => {
+                {purchases.map((item) => {
                   const firstItem = item.items?.[0];
                   const remainingCount = (item.items?.length || 0) - 1;
 
