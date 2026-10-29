@@ -2,13 +2,11 @@
 
 import React, { useState, useMemo } from 'react';
 import { PurchaseRequisition, PurchaseJenis } from '@/types/purchase';
-import { formatRupiah, formatShortDate, deletePurchase } from '@/lib/purchaseService';
+import { formatShortDate, deletePurchase } from '@/lib/purchaseService';
 import {
   Plus,
-  Printer,
   Edit3,
   Trash2,
-  Copy,
   FileText,
   AlertTriangle,
   ArrowUpDown,
@@ -49,17 +47,6 @@ export default function PurchaseList({
       setDeletingId(null);
       onRefresh();
     }
-  };
-
-  const handleDuplicate = (item: PurchaseRequisition) => {
-    const duplicated: PurchaseRequisition = {
-      ...item,
-      id: 'fpp-' + Date.now(),
-      nomor: item.nomor + '-COPY',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    onSelectForEdit(duplicated);
   };
 
   const getJenisBadge = (jenis: PurchaseJenis) => {
@@ -138,8 +125,6 @@ export default function PurchaseList({
                   <th className="py-3 px-3">Tanggal</th>
                   <th className="py-3 px-3">Jenis</th>
                   <th className="py-3 px-3">Ringkasan Barang</th>
-                  <th className="py-3 px-3 text-right">Total Taksiran</th>
-                  <th className="py-3 px-3">Pemohon</th>
                   <th className="py-3 px-4 text-center">Aksi</th>
                 </tr>
               </thead>
@@ -193,28 +178,9 @@ export default function PurchaseList({
                         )}
                       </td>
 
-                      {/* Total Taksiran */}
-                      <td className="py-3 px-3 text-right font-bold text-emerald-400 whitespace-nowrap">
-                        {formatRupiah(item.totalTaksiran)}
-                      </td>
-
-                      {/* Pemohon */}
-                      <td className="py-3 px-3 text-zinc-400 whitespace-nowrap">
-                        {item.dimintaOleh || '-'}
-                      </td>
-
                       {/* Actions */}
                       <td className="py-3 px-4 text-center whitespace-nowrap">
                         <div className="flex items-center justify-center space-x-1">
-                          {/* Cetak A4 */}
-                          <button
-                            onClick={() => onSelectForPreview(item)}
-                            className="p-1.5 text-zinc-400 hover:text-emerald-400 hover:bg-emerald-950/30 rounded-lg transition"
-                            title="Pratinjau & Cetak A4"
-                          >
-                            <Printer className="w-4 h-4" />
-                          </button>
-
                           {/* Edit */}
                           <button
                             onClick={() => onSelectForEdit(item)}
@@ -222,15 +188,6 @@ export default function PurchaseList({
                             title="Edit Formulir"
                           >
                             <Edit3 className="w-4 h-4" />
-                          </button>
-
-                          {/* Duplikat */}
-                          <button
-                            onClick={() => handleDuplicate(item)}
-                            className="p-1.5 text-zinc-400 hover:text-purple-400 hover:bg-purple-950/30 rounded-lg transition"
-                            title="Duplikat Formulir"
-                          >
-                            <Copy className="w-4 h-4" />
                           </button>
 
                           {/* Delete */}
