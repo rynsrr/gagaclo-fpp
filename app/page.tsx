@@ -8,6 +8,7 @@ import {
   generateNextNomor,
   savePurchase,
   todayInJakarta,
+  deletePurchase,
 } from '@/lib/purchaseService';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
@@ -16,6 +17,7 @@ import PurchaseDocument from '@/components/purchase/PurchaseDocument';
 import PurchaseList from '@/components/purchase/PurchaseList';
 import PurchaseSummary from '@/components/purchase/PurchaseSummary';
 import SupabaseSetupModal from '@/components/purchase/SupabaseSetupModal';
+import PasswordModal from '@/components/purchase/PasswordModal';
 
 // Icons
 import {
@@ -25,6 +27,8 @@ import {
   Save,
   Sun,
   Moon,
+  Lock,
+  Unlock,
 } from 'lucide-react';
 
 type ActiveTab = 'FORM';
@@ -54,6 +58,48 @@ export default function MainPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [isEditUnlocked, setIsEditUnlocked] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+
+  // Sync edit mode from sessionStorage on mount
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem('fpp_edit_unlocked') === 'true') {
+        setIsEditUnlocked(true);
+      }
+    } catch {}
+  }, []);
+
+  const requestEditAccess = (onSuccessAction?: () => void) => {
+    if (isEditUnlocked) {
+      if (onSuccessAction) onSuccessAction();
+      return true;
+    }
+    setPendingAction(() => onSuccessAction || null);
+    setIsPasswordModalOpen(true);
+    return false;
+  };
+
+  const handleLockEditMode = () => {
+    setIsEditUnlocked(false);
+    try {
+      sessionStorage.removeItem('fpp_edit_unlocked');
+    } catch {}
+    setSaveNotice('Mode edit dikunci. Dokumen kembali ke Mode Hanya Baca.');
+    setTimeout(() => setSaveNotice(null), 3000);
+  };
+
+  const handlePasswordSuccess = () => {
+    setIsEditUnlocked(true);
+    setSaveNotice('Mode edit berhasil dibuka!');
+    setTimeout(() => setSaveNotice(null), 3000);
+    if (pendingAction) {
+      const action = pendingAction;
+      setPendingAction(null);
+      action();
+    }
+  };
 
   // Theme Sync on Mount
   useEffect(() => {
@@ -143,6 +189,15 @@ export default function MainPage() {
   }, [currentPurchase, purchases]);
 
   const handleAddNewFPP = () => {
+    if (!isEditUnlocked) {
+      requestEditAccess(() => {
+        setCurrentPurchase(createBlankPurchase(purchases));
+        setActiveTab('FORM');
+        setSaveNotice('Formulir baru berhasil dibuat. Silakan ketik langsung pada formulir.');
+        setTimeout(() => setSaveNotice(null), 3500);
+      });
+      return;
+    }
     if (!confirmDiscard()) return;
     setCurrentPurchase(createBlankPurchase(purchases));
     setActiveTab('FORM');
@@ -159,6 +214,12 @@ export default function MainPage() {
   };
 
   const handleSavePurchase = async () => {
+    if (!isEditUnlocked) {
+      requestEditAccess(() => {
+        handleSavePurchase();
+      });
+      return;
+    }
     if (!currentPurchase.nomor || !currentPurchase.nomor.trim()) {
       alert('Nomor formulir tidak boleh kosong.');
       return;
@@ -199,9 +260,41 @@ export default function MainPage() {
   };
 
   const handleSelectForEdit = (item: PurchaseRequisition) => {
+    if (!isEditUnlocked) {
+      requestEditAccess(() => {
+        setCurrentPurchase(item);
+        setActiveTab('FORM');
+      });
+      return;
+    }
     if (!confirmDiscard()) return;
     setCurrentPurchase(item);
     setActiveTab('FORM');
+  };
+
+  const handleDeletePurchase = (id: string, nomor: string) => {
+    if (!isEditUnlocked) {
+      requestEditAccess(async () => {
+        if (confirm(`Apakah Anda yakin ingin menghapus formulir ${nomor}?`)) {
+          const res = await deletePurchase(id);
+          if (!res.success) {
+            alert('Penghapusan gagal. Data belum terhapus dari database.');
+            return;
+          }
+          loadData();
+        }
+      });
+      return;
+    }
+    if (confirm(`Apakah Anda yakin ingin menghapus formulir ${nomor}?`)) {
+      deletePurchase(id).then((res) => {
+        if (!res.success) {
+          alert('Penghapusan gagal. Data belum terhapus dari database.');
+          return;
+        }
+        loadData();
+      });
+    }
   };
 
   const handleSelectForPreview = (item: PurchaseRequisition) => {
@@ -231,6 +324,31 @@ export default function MainPage() {
 
           {/* Right Status & Fast Action */}
           <div className="flex items-center space-x-2">
+            {/* Mode Edit Lock / Unlock Button */}
+            {!isEditUnlocked ? (
+              <button
+                type="button"
+                onClick={() => requestEditAccess()}
+                className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 transition shadow-sm"
+                title="Dokumen dalam Mode Hanya Baca. Klik untuk membuka Mode Edit"
+              >
+                <Lock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                <span className="hidden sm:inline">Hanya Baca</span>
+              </button>
+            ) : (
+              <div className="flex items-center space-x-1 px-2.5 py-1.5 rounded-xl text-xs font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 shadow-sm">
+                <Unlock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span className="hidden sm:inline">Mode Edit</span>
+                <button
+                  type="button"
+                  onClick={handleLockEditMode}
+                  className="ml-1 px-1.5 py-0.5 rounded text-[10px] bg-emerald-500/20 hover:bg-emerald-500/30 transition"
+                  title="Kunci kembali dokumen"
+                >
+                  Kunci
+                </button>
+              </div>
+            )}
 <div className="no-print flex items-center gap-2" role="group" aria-label="Aksi formulir">
                 <button
                     type="button"
@@ -282,7 +400,7 @@ export default function MainPage() {
             >
               <Database className="w-3.5 h-3.5 text-emerald-500" />
               <span className="hidden sm:inline text-slate-700 dark:text-zinc-300">
-                Database
+                {isTableReady && purchases.length > 0 ? `Database (${purchases.length})` : 'Database'}
               </span>
               <span
                 className={`w-2 h-2 rounded-full ${
@@ -302,7 +420,37 @@ export default function MainPage() {
         {/* Render Direct Interactive Form Document */}
         {activeTab === 'FORM' && (
           <div className="w-full grid grid-cols-1 xl:grid-cols-[minmax(0,210mm)_minmax(0,1fr)] gap-6 items-start print:block">
-          <div className="w-full max-w-[210mm] mx-auto">
+          <div className="w-full max-w-[210mm] mx-auto space-y-3">
+          {!isEditUnlocked && (
+            <div className="no-print w-full flex items-center justify-between px-4 py-2.5 bg-amber-500/10 border border-amber-500/25 rounded-xl text-amber-800 dark:text-amber-300 text-xs">
+              <div className="flex items-center space-x-2">
+                <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span>Dokumen dalam <strong>Mode Hanya Baca</strong>. Masukkan password untuk mengedit.</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => requestEditAccess()}
+                className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-black font-semibold rounded-lg text-xs transition active:scale-95 shadow-sm"
+              >
+                Buka Kunci Edit
+              </button>
+            </div>
+          )}
+          {isEditUnlocked && (
+            <div className="no-print w-full flex items-center justify-between px-4 py-2 bg-emerald-500/10 border border-emerald-500/25 rounded-xl text-emerald-800 dark:text-emerald-300 text-xs">
+              <div className="flex items-center space-x-2">
+                <Unlock className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span><strong>Mode Edit Aktif</strong> — Anda dapat mengubah isi formulir dan menyimpan ke database.</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleLockEditMode}
+                className="px-2.5 py-1 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-lg text-xs transition"
+              >
+                Kunci Dokumen
+              </button>
+            </div>
+          )}
           <PurchaseDocument
             key={currentPurchase.id || 'current-fpp'}
             data={currentPurchase}
@@ -310,7 +458,7 @@ export default function MainPage() {
             onSave={handleSavePurchase}
             onGenerateNomor={handleGenerateNomor}
             saveNotice={saveNotice}
-            isEditable={!isLoading}
+            isEditable={isEditUnlocked && !isLoading}
           />
           </div>
           <div className="no-print min-w-0 space-y-4">
@@ -320,6 +468,7 @@ export default function MainPage() {
               onSelectForEdit={handleSelectForEdit}
               onSelectForPreview={handleSelectForPreview}
               onAddNew={handleAddNewFPP}
+              onDelete={handleDeletePurchase}
               onRefresh={() => loadData()}
             />
           </div>
@@ -334,6 +483,14 @@ export default function MainPage() {
         onClose={() => setIsSetupModalOpen(false)}
         isTableReady={isTableReady}
         supabaseUrl={'https://xtkjzqeqotewaggjfnzr.supabase.co'}
+        purchasesCount={purchases.length}
+      />
+
+      {/* Password Modal for Edit Access */}
+      <PasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+        onSuccess={handlePasswordSuccess}
       />
     </div>
   );

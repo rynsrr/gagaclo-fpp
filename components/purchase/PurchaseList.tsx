@@ -19,6 +19,7 @@ interface PurchaseListProps {
   onSelectForPreview: (item: PurchaseRequisition) => void;
   onAddNew: () => void;
   onRefresh: () => void;
+  onDelete?: (id: string, nomor: string) => void;
 }
 
 export default function PurchaseList({
@@ -27,6 +28,7 @@ export default function PurchaseList({
   onSelectForPreview,
   onAddNew,
   onRefresh,
+  onDelete,
 }: PurchaseListProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -42,6 +44,10 @@ export default function PurchaseList({
   }, [purchases, searchQuery]);
 
   const handleDelete = async (id: string, nomor: string) => {
+    if (onDelete) {
+      onDelete(id, nomor);
+      return;
+    }
     if (confirm(`Apakah Anda yakin ingin menghapus formulir ${nomor}?`)) {
       setDeletingId(id);
       const result = await deletePurchase(id);

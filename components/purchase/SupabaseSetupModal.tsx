@@ -17,6 +17,7 @@ interface SupabaseSetupModalProps {
   onClose: () => void;
   isTableReady: boolean;
   supabaseUrl: string;
+  purchasesCount?: number;
 }
 
 const SQL_SCHEMA = `-- Jalankan skrip ini di Supabase SQL Editor:
@@ -60,6 +61,7 @@ export default function SupabaseSetupModal({
   onClose,
   isTableReady,
   supabaseUrl,
+  purchasesCount = 0,
 }: SupabaseSetupModalProps) {
   const [copied, setCopied] = useState(false);
 
@@ -119,6 +121,33 @@ export default function SupabaseSetupModal({
               )}
             </div>
           </div>
+        </div>
+
+        {/* Kuota & Kapasitas Database */}
+        <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-800 space-y-2.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-semibold text-zinc-300">Kuota & Kapasitas Database Supabase</span>
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              Free Tier
+            </span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+            <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800/80">
+              <div className="text-[10px] text-zinc-400">Total Formulir</div>
+              <div className="text-sm font-bold text-white mt-0.5">{purchasesCount} <span className="text-xs font-normal text-zinc-400">FPP</span></div>
+            </div>
+            <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800/80">
+              <div className="text-[10px] text-zinc-400">Batas Database</div>
+              <div className="text-sm font-bold text-emerald-400 mt-0.5">500 <span className="text-xs font-normal text-zinc-400">MB</span></div>
+            </div>
+            <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800/80 col-span-2 sm:col-span-1">
+              <div className="text-[10px] text-zinc-400">Status Pemakaian</div>
+              <div className="text-sm font-bold text-emerald-400 mt-0.5">&lt; 1% <span className="text-xs font-normal text-zinc-400">(Sangat Aman)</span></div>
+            </div>
+          </div>
+          <p className="text-[11px] text-zinc-400 leading-relaxed">
+            Kapasitas 500 MB pada paket gratis Supabase mampu menampung ribuan formulir FPP beserta lampiran foto terkompresi.
+          </p>
         </div>
 
         {/* Step by step guide */}
