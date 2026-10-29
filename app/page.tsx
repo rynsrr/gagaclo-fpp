@@ -18,7 +18,6 @@ import SupabaseSetupModal from '@/components/purchase/SupabaseSetupModal';
 
 // Icons
 import {
-  FileText,
   Printer,
   Plus,
   Database,
@@ -230,23 +229,7 @@ export default function MainPage() {
 
           </div>
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-          {/* Navigation Tabs */}
-          <nav className="flex items-center shrink-0 space-x-1 bg-slate-200/80 dark:bg-zinc-900/90 border border-slate-300 dark:border-zinc-800 p-1 rounded-xl text-xs font-medium">
-            <button
-              onClick={() => setActiveTab('FORM')}
-              className={`flex items-center space-x-1.5 px-2.5 sm:px-3.5 py-2 rounded-lg transition ${
-                activeTab === 'FORM'
-                  ? 'bg-blue-600 text-white font-semibold shadow'
-                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <FileText className="w-3.5 h-3.5" />
-              <span>Formulir FPP</span>
-            </button>
-          </nav>
 
-          </div>
         </div>
       </header>
 
