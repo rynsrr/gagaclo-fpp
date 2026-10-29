@@ -335,63 +335,80 @@ export default function PurchaseDocument({
             </div>
           )}
 
-          <div className="flex flex-wrap items-center justify-between gap-2.5 bg-slate-900/95 dark:bg-zinc-900/95 border border-slate-700 dark:border-zinc-800 rounded-2xl p-3 px-4 shadow-xl text-white">
-            <div className="flex items-center space-x-2">
-              <span className="text-xs font-semibold px-2.5 py-1 bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-lg">
-                Input Langsung di Formulir
-              </span>
-              <span className="hidden sm:inline text-xs text-zinc-400">
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-slate-800/90 to-slate-900/90 dark:from-zinc-900 dark:to-zinc-950 border border-slate-600/40 dark:border-zinc-700/60 rounded-2xl p-3.5 px-5 shadow-lg shadow-black/20 text-white backdrop-blur-sm">
+            {/* Left: Mode indicator + hint */}
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex items-center gap-2 pl-1">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
+                </span>
+                <span className="text-sm font-semibold text-white tracking-tight">
+                  Input Langsung di Formulir
+                </span>
+              </div>
+              <span className="hidden md:inline text-xs text-zinc-400/80 before:content-['|'] before:mr-3 before:text-zinc-600">
                 Ketik langsung &bull; Paste foto (Ctrl+V) &bull; 1 Halaman A4
               </span>
             </div>
 
+            {/* Right: Action buttons */}
             <div className="flex flex-wrap items-center gap-2">
-              {onLoadSample && (
+              {/* Secondary actions group */}
+              <div className="flex items-center gap-1.5 bg-white/5 dark:bg-white/[0.03] rounded-xl p-1 border border-white/10 dark:border-white/[0.06]">
+                {onLoadSample && (
+                  <button
+                    type="button"
+                    onClick={onLoadSample}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-zinc-300 hover:text-white hover:bg-white/10 text-xs font-medium rounded-lg transition"
+                    title="Muat contoh data PT Gagaclo"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span className="hidden md:inline">Contoh Data</span>
+                  </button>
+                )}
+
+                {onNew && (
+                  <button
+                    type="button"
+                    onClick={onNew}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-zinc-300 hover:text-white hover:bg-white/10 text-xs font-medium rounded-lg transition"
+                    title="Buat formulir baru dengan nomor urut berikutnya"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Baru</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Divider */}
+              <div className="hidden sm:block w-px h-6 bg-white/10 dark:bg-white/10" />
+
+              {/* Primary actions group */}
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={onLoadSample}
-                  className="flex items-center space-x-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs font-medium rounded-lg border border-zinc-700 transition"
-                  title="Muat contoh data PT Gagaclo"
+                  onClick={handlePrint}
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-sm shadow-indigo-900/30 transition active:scale-95 hover:shadow-md hover:shadow-indigo-900/40"
+                  title="Cetak langsung atau simpan sebagai PDF A4 (Pasti 1 Halaman)"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                  <span className="hidden md:inline">Contoh Data</span>
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Cetak / PDF</span>
                 </button>
-              )}
 
-              {onNew && (
-                <button
-                  type="button"
-                  onClick={onNew}
-                  className="flex items-center space-x-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs font-medium rounded-lg border border-zinc-700 transition"
-                  title="Buat formulir baru dengan nomor urut berikutnya"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Baru</span>
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={handlePrint}
-                className="flex items-center space-x-1.5 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg shadow-sm transition active:scale-95"
-                title="Cetak langsung atau simpan sebagai PDF A4 (Pasti 1 Halaman)"
-              >
-                <Printer className="w-3.5 h-3.5" />
-                <span>Cetak / PDF</span>
-              </button>
-
-              {onSave && (
-                <button
-                  type="button"
-                  onClick={onSave}
-                  disabled={isSaving}
-                  className="flex items-center space-x-1.5 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg shadow-md transition active:scale-95 disabled:opacity-50"
-                  title="Simpan formulir ke database Supabase dan penyimpanan lokal"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>{isSaving ? 'Menyimpan...' : 'Simpan FPP'}</span>
-                </button>
-              )}
+                {onSave && (
+                  <button
+                    type="button"
+                    onClick={onSave}
+                    disabled={isSaving}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl shadow-sm shadow-emerald-900/30 transition active:scale-95 disabled:opacity-50 hover:shadow-md hover:shadow-emerald-900/40"
+                    title="Simpan formulir ke database Supabase dan penyimpanan lokal"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>{isSaving ? 'Menyimpan...' : 'Simpan FPP'}</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
