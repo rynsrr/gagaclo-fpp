@@ -9,7 +9,6 @@ import {
   savePurchase,
 } from '@/lib/purchaseService';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
-import GagacloLogo from '@/components/GagacloLogo';
 
 // Components
 import PurchaseDocument from '@/components/purchase/PurchaseDocument';
@@ -190,7 +189,7 @@ export default function MainPage() {
           {/* Logo & Company Title */}
           <div className="flex items-center space-x-3">
             <div className="flex items-center">
-              <GagacloLogo className="text-[28px] sm:text-[32px] text-black dark:text-white" />
+              <span className="text-[28px] sm:text-[32px] leading-none font-bold tracking-tight text-black dark:text-white">FPP</span>
             </div>
             <div className="hidden sm:block h-6 w-px bg-slate-200 dark:bg-zinc-800" />
             <div className="hidden sm:flex items-center space-x-2">
