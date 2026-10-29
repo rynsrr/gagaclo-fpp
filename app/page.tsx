@@ -298,13 +298,8 @@ export default function MainPage() {
             isEditable={true}
           />
           </div>
+          <div className="no-print min-w-0 space-y-4">
           <PurchaseSummary purchases={purchases} />
-          </div>
-        )}
-
-        {/* Render List */}
-        {activeTab === 'FORM' && (
-          <div className="no-print w-full mt-8">
             <PurchaseList
               purchases={purchases}
               onSelectForEdit={handleSelectForEdit}
@@ -313,7 +308,9 @@ export default function MainPage() {
               onRefresh={loadData}
             />
           </div>
+          </div>
         )}
+
       </main>
 
       {/* Supabase Setup Modal */}
