@@ -44,8 +44,12 @@ export default function PurchaseList({
   const handleDelete = async (id: string, nomor: string) => {
     if (confirm(`Apakah Anda yakin ingin menghapus formulir ${nomor}?`)) {
       setDeletingId(id);
-      await deletePurchase(id);
+      const result = await deletePurchase(id);
       setDeletingId(null);
+      if (!result.success) {
+        alert('Penghapusan gagal. Data belum terhapus dari database.');
+        return;
+      }
       onRefresh();
     }
   };

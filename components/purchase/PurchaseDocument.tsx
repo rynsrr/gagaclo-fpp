@@ -2,7 +2,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { PurchaseRequisition, PurchaseItem, PurchaseJenis, PurchasePhoto } from '@/types/purchase';
-import { formatRupiah, formatShortDate } from '@/lib/purchaseService';
+import { formatRupiah, formatShortDate, calculateItemAmount } from '@/lib/purchaseService';
 import { SIGNATURE_ROYAN_SRC } from '@/lib/logoData';
 import GagacloLogo from '@/components/GagacloLogo';
 import { compressImage } from '@/lib/imageUtils';
@@ -86,13 +86,7 @@ export default function PurchaseDocument({
     // Auto-calculate 'jumlah' if hargaSatuan or banyaknya contains numeric quantity
     if (field === 'hargaSatuan' || field === 'banyaknya') {
       const harga = field === 'hargaSatuan' ? Number(value) || 0 : targetItem.hargaSatuan || 0;
-      const qtyMatch = String(targetItem.banyaknya || '').match(/^(\d+(?:[.,]\d+)?)/);
-      if (qtyMatch) {
-        const qtyNum = parseFloat(qtyMatch[1].replace(',', '.'));
-        if (!isNaN(qtyNum) && qtyNum > 0 && harga > 0) {
-          targetItem.jumlah = Math.round(qtyNum * harga);
-        }
-      }
+      targetItem.jumlah = calculateItemAmount(String(targetItem.banyaknya || ''), harga);
     }
 
     updatedItems[index] = targetItem;

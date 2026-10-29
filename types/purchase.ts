@@ -45,6 +45,7 @@ export interface PurchaseRequisition {
   totalTaksiran: number;
   createdAt: string;
   updatedAt: string;
+  pendingSync?: boolean; // Local-only: not yet confirmed by cloud
 }
 
 export const DEFAULT_PURCHASE_REQUISITION: PurchaseRequisition = {

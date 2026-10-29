@@ -135,12 +135,14 @@ export function getLocalPurchases(): PurchaseRequisition[] {
   }
 }
 
-export function saveLocalPurchases(list: PurchaseRequisition[]): void {
-  if (typeof window === 'undefined') return;
+export function saveLocalPurchases(list: PurchaseRequisition[]): boolean {
+  if (typeof window === 'undefined') return false;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    return true;
   } catch (err) {
     console.error('Failed to write to localStorage:', err);
+    return false;
   }
 }
 
@@ -192,7 +194,10 @@ export async function getAllPurchases(): Promise<{ data: PurchaseRequisition[]; 
         .order('created_at', { ascending: false });
 
       if (!error && data) {
-        const mapped = data.map(mapFromDb);
+        const cloud = data.map(mapFromDb);
+        const pending = getLocalPurchases().filter((item) => item.pendingSync);
+        const pendingIds = new Set(pending.map((item) => item.id));
+        const mapped = [...pending, ...cloud.filter((item) => !pendingIds.has(item.id))];
         // Cache to local storage
         saveLocalPurchases(mapped);
         return { data: mapped, fromCloud: true };
@@ -207,13 +212,14 @@ export async function getAllPurchases(): Promise<{ data: PurchaseRequisition[]; 
 }
 
 // Save or Update Purchase Requisition
-export async function savePurchase(item: PurchaseRequisition): Promise<{ success: boolean; fromCloud: boolean }> {
+export async function savePurchase(item: PurchaseRequisition): Promise<{ success: boolean; fromCloud: boolean; localSaved: boolean }> {
   const localList = getLocalPurchases();
   const existingIdx = localList.findIndex((x) => x.id === item.id);
   const nowIso = new Date().toISOString();
 
   const toSave: PurchaseRequisition = {
     ...item,
+    pendingSync: true,
     updatedAt: nowIso,
     createdAt: item.createdAt || nowIso,
   };
@@ -225,7 +231,7 @@ export async function savePurchase(item: PurchaseRequisition): Promise<{ success
   } else {
     updatedList = [toSave, ...localList];
   }
-  saveLocalPurchases(updatedList);
+  const localSaved = saveLocalPurchases(updatedList);
 
   if (isSupabaseConfigured() && supabase) {
     try {
@@ -243,7 +249,8 @@ export async function savePurchase(item: PurchaseRequisition): Promise<{ success
       }
 
       if (!error) {
-        return { success: true, fromCloud: true };
+        saveLocalPurchases(getLocalPurchases().map((cached) => cached.id === toSave.id && cached.updatedAt === toSave.updatedAt ? { ...cached, pendingSync: false } : cached));
+        return { success: true, fromCloud: true, localSaved };
       } else {
         console.warn('Supabase upsert failed:', error.message);
       }
@@ -252,14 +259,14 @@ export async function savePurchase(item: PurchaseRequisition): Promise<{ success
     }
   }
 
-  return { success: true, fromCloud: false };
+  return { success: localSaved, fromCloud: false, localSaved };
 }
 
 // Delete Purchase Requisition
 export async function deletePurchase(id: string): Promise<{ success: boolean; fromCloud: boolean }> {
   const localList = getLocalPurchases();
   const updatedList = localList.filter((x) => x.id !== id);
-  saveLocalPurchases(updatedList);
+  const localSaved = saveLocalPurchases(updatedList);
 
   if (isSupabaseConfigured() && supabase) {
     try {
@@ -276,7 +283,7 @@ export async function deletePurchase(id: string): Promise<{ success: boolean; fr
     }
   }
 
-  return { success: true, fromCloud: false };
+  return { success: !isSupabaseConfigured() && localSaved, fromCloud: false };
 }
 
 // Helpers
@@ -307,4 +314,18 @@ export function formatShortDate(dateStr?: string): string {
     return `${parts[2]}/${parts[1]}/${parts[0]}`;
   }
   return dateStr;
+}
+
+export function todayInJakarta(date = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(date);
+  const get = (type: string) => parts.find((part) => part.type === type)?.value;
+  return `${get('year')}-${get('month')}-${get('day')}`;
+}
+
+export function calculateItemAmount(quantity: string, price: number): number {
+  const match = quantity.match(/^(\d+(?:[.,]\d+)?)/);
+  const count = match ? Number(match[1].replace(',', '.')) : 0;
+  return Math.round(Math.max(0, count) * Math.max(0, Number(price) || 0));
 }

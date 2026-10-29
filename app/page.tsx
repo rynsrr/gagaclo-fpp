@@ -7,6 +7,7 @@ import {
   checkSupabasePurchaseTable,
   generateNextNomor,
   savePurchase,
+  todayInJakarta,
 } from '@/lib/purchaseService';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
@@ -32,9 +33,9 @@ function createBlankPurchase(purchases: PurchaseRequisition[]): PurchaseRequisit
   const now = new Date();
   return {
     ...DEFAULT_PURCHASE_REQUISITION,
-    id: 'fpp-' + now.getTime(),
+    id: 'fpp-' + crypto.randomUUID(),
     nomor: generateNextNomor(purchases),
-    tanggal: now.toISOString().split('T')[0],
+    tanggal: todayInJakarta(now),
     items: DEFAULT_PURCHASE_REQUISITION.items.map((item) => ({ ...item })),
     photos: [],
     createdAt: now.toISOString(),
@@ -76,7 +77,7 @@ export default function MainPage() {
   };
 
   // Load data & verify Supabase
-  const loadData = async () => {
+  const loadData = async (initialize = false) => {
     setIsLoading(true);
     const configured = isSupabaseConfigured();
     setIsCloudReady(configured);
@@ -89,13 +90,13 @@ export default function MainPage() {
     const { data } = await getAllPurchases();
     const savedPurchases = data || [];
     setPurchases(savedPurchases);
-    setCurrentPurchase(createBlankPurchase(savedPurchases));
+    if (initialize) setCurrentPurchase(createBlankPurchase(savedPurchases));
 
     setIsLoading(false);
   };
 
   useEffect(() => {
-    loadData();
+    loadData(true);
 
     // Setup Supabase Realtime channel for live multi-user sync
     if (isSupabaseConfigured() && supabase) {
@@ -119,7 +120,30 @@ export default function MainPage() {
   }, []);
 
   // Handlers
+  const confirmDiscard = () => {
+    const saved = purchases.find((purchase) => purchase.id === currentPurchase.id);
+    const baseline = saved || { ...DEFAULT_PURCHASE_REQUISITION, nomor: currentPurchase.nomor, tanggal: currentPurchase.tanggal };
+    const fields = ['jenis', 'items', 'uraianKeperluan', 'catatan', 'photos', 'dimintaOleh', 'tanggalDiterima'] as const;
+    const dirty = fields.some((field) => JSON.stringify(currentPurchase[field]) !== JSON.stringify(baseline[field]));
+    return !dirty || confirm('Ada perubahan belum disimpan. Tinggalkan perubahan ini?');
+  };
+
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      const saved = purchases.find((purchase) => purchase.id === currentPurchase.id);
+      const baseline = saved || DEFAULT_PURCHASE_REQUISITION;
+      const fields = ['jenis', 'items', 'uraianKeperluan', 'catatan', 'photos', 'dimintaOleh', 'tanggalDiterima'] as const;
+      if (fields.some((field) => JSON.stringify(currentPurchase[field]) !== JSON.stringify(baseline[field]))) {
+        event.preventDefault();
+        event.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [currentPurchase, purchases]);
+
   const handleAddNewFPP = () => {
+    if (!confirmDiscard()) return;
     setCurrentPurchase(createBlankPurchase(purchases));
     setActiveTab('FORM');
     setSaveNotice('Formulir baru berhasil dibuat. Silakan ketik langsung pada formulir.');
@@ -145,6 +169,11 @@ export default function MainPage() {
       return;
     }
 
+    if (isSaving) return;
+    if (purchases.some((purchase) => purchase.id !== currentPurchase.id && purchase.nomor.trim().toUpperCase() === currentPurchase.nomor.trim().toUpperCase())) {
+      alert('Nomor FPP sudah digunakan. Generate nomor baru sebelum menyimpan.');
+      return;
+    }
     setIsSaving(true);
     setSaveNotice(null);
 
@@ -153,7 +182,7 @@ export default function MainPage() {
 
     if (result.success) {
       const destination = result.fromCloud
-        ? 'Supabase Cloud Database & Penyimpanan Lokal'
+        ? (result.localSaved ? 'Supabase Cloud Database & Penyimpanan Lokal' : 'Supabase Cloud Database')
         : 'Penyimpanan Lokal (Browser Storage)';
       setSaveNotice(`Formulir ${currentPurchase.nomor} berhasil disimpan ke ${destination}!`);
       
@@ -170,11 +199,13 @@ export default function MainPage() {
   };
 
   const handleSelectForEdit = (item: PurchaseRequisition) => {
+    if (!confirmDiscard()) return;
     setCurrentPurchase(item);
     setActiveTab('FORM');
   };
 
   const handleSelectForPreview = (item: PurchaseRequisition) => {
+    if (!confirmDiscard()) return;
     setCurrentPurchase(item);
     setActiveTab('FORM');
   };
@@ -203,6 +234,7 @@ export default function MainPage() {
 <div className="no-print flex items-center gap-2" role="group" aria-label="Aksi formulir">
                 <button
                     type="button"
+                    disabled={isLoading}
                     onClick={handleAddNewFPP}
                     className="inline-flex items-center justify-center w-10 h-10 shrink-0 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition active:scale-95 disabled:opacity-50"
                     aria-label="Formulir baru"
@@ -223,7 +255,7 @@ export default function MainPage() {
                 <button
                     type="button"
                     onClick={handleSavePurchase}
-                    disabled={isSaving}
+                    disabled={isSaving || isLoading}
                     className="inline-flex items-center justify-center w-10 h-10 shrink-0 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition active:scale-95 disabled:opacity-50"
                     aria-label={isSaving ? 'Menyimpan...' : 'Simpan FPP'}
                     aria-busy={isSaving}
@@ -278,7 +310,7 @@ export default function MainPage() {
             onSave={handleSavePurchase}
             onGenerateNomor={handleGenerateNomor}
             saveNotice={saveNotice}
-            isEditable={true}
+            isEditable={!isLoading}
           />
           </div>
           <div className="no-print min-w-0 space-y-4">
@@ -288,7 +320,7 @@ export default function MainPage() {
               onSelectForEdit={handleSelectForEdit}
               onSelectForPreview={handleSelectForPreview}
               onAddNew={handleAddNewFPP}
-              onRefresh={loadData}
+              onRefresh={() => loadData()}
             />
           </div>
           </div>
