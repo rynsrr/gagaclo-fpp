@@ -26,4 +26,4 @@ Contoh penggunaan untuk membuat logo dengan tulisan `PT. GAGACLO`:
 <span class="gagaclo-logo" role="img" aria-label="PT. Gagaclo">PT. GAGACLO</span>
 ```
 
-Aset ini disimpan untuk penggunaan logo berikutnya. Logo yang saat ini tampil di aplikasi belum diganti.
+Logo pada header aplikasi dan kop formulir menggunakan komponen `components/GagacloLogo.tsx` dengan font lokal ini dan tulisan `P.T. GAGACLO`.

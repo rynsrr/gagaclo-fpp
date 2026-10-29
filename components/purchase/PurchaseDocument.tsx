@@ -3,7 +3,8 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { PurchaseRequisition, PurchaseItem, PurchaseJenis, PurchasePhoto } from '@/types/purchase';
 import { formatRupiah, formatShortDate } from '@/lib/purchaseService';
-import { LOGO_GAGACLO_SRC, SIGNATURE_ROYAN_SRC } from '@/lib/logoData';
+import { SIGNATURE_ROYAN_SRC } from '@/lib/logoData';
+import GagacloLogo from '@/components/GagacloLogo';
 import { compressImage } from '@/lib/imageUtils';
 import {
   Plus,
@@ -340,12 +341,7 @@ export default function PurchaseDocument({
           <div className="flex items-center justify-start gap-4 pb-1.5">
             {/* Logo P.T. GAGACLO (Official Wordmark) */}
             <div className="flex-shrink-0">
-              <img
-                src={LOGO_GAGACLO_SRC}
-                alt="P.T. GAGACLO"
-                className="h-11 w-auto object-contain block"
-                style={{ maxHeight: '44px' }}
-              />
+              <GagacloLogo className="text-[44px] text-black" />
             </div>
 
             {/* Alamat di samping logo P.T. GAGACLO */}

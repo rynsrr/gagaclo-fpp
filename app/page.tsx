@@ -10,7 +10,7 @@ import {
   SAMPLE_PURCHASE_REQUISITION,
 } from '@/lib/purchaseService';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
-import { LOGO_GAGACLO_SRC } from '@/lib/logoData';
+import GagacloLogo from '@/components/GagacloLogo';
 
 // Components
 import PurchaseDocument from '@/components/purchase/PurchaseDocument';
@@ -197,11 +197,7 @@ export default function MainPage() {
           {/* Logo & Company Title */}
           <div className="flex items-center space-x-3">
             <div className="flex items-center">
-              <img
-                src={LOGO_GAGACLO_SRC}
-                alt="P.T. GAGACLO"
-                className="h-7 sm:h-8 w-auto object-contain dark:brightness-0 dark:invert transition-all"
-              />
+              <GagacloLogo className="text-[28px] sm:text-[32px] text-black dark:text-white" />
             </div>
             <div className="hidden sm:block h-6 w-px bg-slate-200 dark:bg-zinc-800" />
             <div className="hidden sm:flex items-center space-x-2">
