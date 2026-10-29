@@ -290,11 +290,11 @@ export default function MainPage() {
                 <button
                     type="button"
                     onClick={handleAddNewFPP}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-zinc-300 hover:text-white hover:bg-white/10 text-xs font-medium rounded-lg transition"
+                    className="inline-flex items-center justify-center w-9 h-9 text-zinc-300 hover:text-white hover:bg-white/10 text-xs font-medium rounded-lg transition"
+                    aria-label="Formulir baru"
                     title="Buat formulir baru dengan nomor urut berikutnya"
                   >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Baru</span>
+                    <Plus className="w-4 h-4" />
                   </button>
               </div>
 
@@ -306,22 +306,23 @@ export default function MainPage() {
                 <button
                   type="button"
                   onClick={() => window.print()}
-                  className="flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-sm shadow-indigo-900/30 transition active:scale-95 hover:shadow-md hover:shadow-indigo-900/40"
+                  className="inline-flex items-center justify-center w-10 h-10 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-sm shadow-indigo-900/30 transition active:scale-95 hover:shadow-md hover:shadow-indigo-900/40"
+                  aria-label="Cetak / PDF"
                   title="Cetak langsung atau simpan sebagai PDF A4 (Pasti 1 Halaman)"
                 >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span>Cetak / PDF</span>
+                  <Printer className="w-4 h-4" />
                 </button>
 
                 <button
                     type="button"
                     onClick={handleSavePurchase}
                     disabled={isSaving}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl shadow-sm shadow-emerald-900/30 transition active:scale-95 disabled:opacity-50 hover:shadow-md hover:shadow-emerald-900/40"
+                    className="inline-flex items-center justify-center w-10 h-10 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl shadow-sm shadow-emerald-900/30 transition active:scale-95 disabled:opacity-50 hover:shadow-md hover:shadow-emerald-900/40"
+                    aria-label={isSaving ? 'Menyimpan...' : 'Simpan FPP'}
+                    aria-busy={isSaving}
                     title="Simpan formulir ke database Supabase dan penyimpanan lokal"
                   >
-                    <Save className="w-3.5 h-3.5" />
-                    <span>{isSaving ? 'Menyimpan...' : 'Simpan FPP'}</span>
+                    <Save className={`w-4 h-4 ${isSaving ? 'animate-pulse' : ''}`} />
                   </button>
               </div>
             </div>
