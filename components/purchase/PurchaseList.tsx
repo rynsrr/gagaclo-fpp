@@ -52,7 +52,7 @@ export default function PurchaseList({
 
   const getJenisBadge = (jenis: PurchaseJenis) => {
     const labels = { Rutin: 'R', 'Non Rutin': 'NR', Segera: 'S', '': '—' };
-    return <span title={jenis || 'Belum dipilih'} aria-label={jenis || 'Belum dipilih'} className="inline-block rounded border border-zinc-300 dark:border-zinc-700 px-1 py-0.5 font-semibold">{labels[jenis]}</span>;
+    return <span title={jenis || 'Belum dipilih'} aria-label={jenis || 'Belum dipilih'} className="inline-block rounded border border-zinc-300 dark:border-zinc-700 px-1 py-0.5 font-normal">{labels[jenis]}</span>;
   };
 
   return (
@@ -76,7 +76,7 @@ export default function PurchaseList({
             <div className="text-zinc-400 text-sm">Tidak ada formulir permohonan yang sesuai.</div>
             <button
               onClick={onAddNew}
-              className="inline-flex items-center space-x-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition"
+              className="inline-flex items-center space-x-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-normal rounded-lg transition"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Buat Formulir Baru Sekarang</span>
@@ -93,7 +93,7 @@ export default function PurchaseList({
                 <col style={{ width: '17%' }} />
               </colgroup>
               <thead>
-                <tr className="border-b border-zinc-800 text-zinc-400 font-semibold bg-zinc-100 dark:bg-zinc-950/80">
+                <tr className="border-b border-zinc-800 text-zinc-400 font-normal bg-zinc-100 dark:bg-zinc-950/80">
                   <th className="py-2 px-1.5">Nomor FPP</th>
                   <th className="py-2 px-1.5">Tanggal</th>
                   <th className="py-2 px-1.5">Jenis</th>
@@ -109,7 +109,7 @@ export default function PurchaseList({
                   return (
                     <tr key={item.id} className="hover:bg-zinc-800/30 transition">
                       {/* Nomor */}
-                      <td className="py-2 px-1.5 font-bold text-black dark:text-white whitespace-nowrap">
+                      <td className="py-2 px-1.5 font-normal text-black dark:text-white whitespace-nowrap">
                         <button
                           onClick={() => onSelectForPreview(item)}
                           className="hover:text-blue-400 block w-full truncate text-left"
@@ -135,7 +135,7 @@ export default function PurchaseList({
                           <div className="truncate text-zinc-800 dark:text-zinc-200">
                             <span>{firstItem.namaBarang || 'Tanpa nama'}</span>
                             {remainingCount > 0 && (
-                              <span className="text-[10px] text-zinc-500 ml-1.5 bg-zinc-800 px-1.5 py-0.5 rounded">
+                              <span className="text-[10px] text-zinc-500 ml-1">
                                 +{remainingCount} lainnya
                               </span>
                             )}
