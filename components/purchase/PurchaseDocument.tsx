@@ -346,6 +346,7 @@ export default function PurchaseDocument({
 
             {/* Alamat di samping logo P.T. GAGACLO */}
             <div className="text-left text-[9.5px] leading-tight text-black">
+              <div>PT Gagaclo</div>
               <div>JL. Tambakaji Timur No.1,</div>
               <div>Semarang 50185, Central Java, Indonesia</div>
               <div>Tel: +62 24 866 1188 Fax: +62 24 866 2562</div>
