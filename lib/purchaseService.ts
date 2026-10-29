@@ -71,7 +71,7 @@ function mapFromDb(row: any): PurchaseRequisition {
     id: row.id,
     nomor: row.nomor || '',
     tanggal: row.tanggal || '',
-    jenis: (row.jenis as PurchaseJenis) || 'Rutin',
+    jenis: (row.jenis as PurchaseJenis) || '',
     items: Array.isArray(row.items) ? row.items : [],
     uraianKeperluan: row.uraian_keperluan || '',
     tanggalDiterima: row.tanggal_diterima || '',
@@ -120,32 +120,18 @@ function mapToDb(item: PurchaseRequisition): any {
 
 // LocalStorage helpers
 export function getLocalPurchases(): PurchaseRequisition[] {
-  if (typeof window === 'undefined') return [SAMPLE_PURCHASE_REQUISITION];
+  if (typeof window === 'undefined') return [];
   try {
-    // Clear old legacy cache if present
-    if (localStorage.getItem('gagaclo_purchase_requisitions_v1')) {
-      localStorage.removeItem('gagaclo_purchase_requisitions_v1');
-    }
-
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify([SAMPLE_PURCHASE_REQUISITION]));
-      return [SAMPLE_PURCHASE_REQUISITION];
-    }
+    if (!raw) return [];
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      // Ensure any legacy sample has blank tanggalDiterima and nomor
-      return parsed.map((item: PurchaseRequisition) => {
-        if (item.id === 'fpp-sample-001') {
-          return { ...item, tanggalDiterima: '', nomor: item.nomor || 'ROYAN-0001' };
-        }
-        return item;
-      });
-    }
-    return [SAMPLE_PURCHASE_REQUISITION];
+    // Ignore the automatically seeded demo; retain saved user documents.
+    return Array.isArray(parsed)
+      ? parsed.filter((item: PurchaseRequisition) => item.id !== 'fpp-sample-001')
+      : [];
   } catch (err) {
     console.error('Failed to read from localStorage:', err);
-    return [SAMPLE_PURCHASE_REQUISITION];
+    return [];
   }
 }
 

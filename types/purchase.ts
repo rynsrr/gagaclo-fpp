@@ -1,4 +1,4 @@
-export type PurchaseJenis = 'Rutin' | 'Non Rutin' | 'Segera';
+export type PurchaseJenis = '' | 'Rutin' | 'Non Rutin' | 'Segera';
 
 export type PurchaseStatus = 'Draft' | 'Diajukan' | 'Diketahui' | 'Disetujui' | 'Diterima' | 'Selesai';
 
@@ -51,7 +51,7 @@ export const DEFAULT_PURCHASE_REQUISITION: PurchaseRequisition = {
   id: '',
   nomor: '',
   tanggal: new Date().toISOString().split('T')[0],
-  jenis: 'Rutin',
+  jenis: '',
   items: [
     {
       id: '1',

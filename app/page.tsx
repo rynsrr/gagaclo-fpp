@@ -7,7 +7,6 @@ import {
   checkSupabasePurchaseTable,
   generateNextNomor,
   savePurchase,
-  SAMPLE_PURCHASE_REQUISITION,
 } from '@/lib/purchaseService';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import GagacloLogo from '@/components/GagacloLogo';
@@ -31,10 +30,24 @@ import {
 
 type ActiveTab = 'FORM' | 'LIST';
 
+function createBlankPurchase(purchases: PurchaseRequisition[]): PurchaseRequisition {
+  const now = new Date();
+  return {
+    ...DEFAULT_PURCHASE_REQUISITION,
+    id: 'fpp-' + now.getTime(),
+    nomor: generateNextNomor(purchases),
+    tanggal: now.toISOString().split('T')[0],
+    items: DEFAULT_PURCHASE_REQUISITION.items.map((item) => ({ ...item })),
+    photos: [],
+    createdAt: now.toISOString(),
+    updatedAt: now.toISOString(),
+  };
+}
+
 export default function MainPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('FORM');
   const [purchases, setPurchases] = useState<PurchaseRequisition[]>([]);
-  const [currentPurchase, setCurrentPurchase] = useState<PurchaseRequisition>(SAMPLE_PURCHASE_REQUISITION);
+  const [currentPurchase, setCurrentPurchase] = useState<PurchaseRequisition>(() => createBlankPurchase([]));
   const [isCloudReady, setIsCloudReady] = useState(false);
   const [isTableReady, setIsTableReady] = useState(false);
   const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
@@ -76,13 +89,9 @@ export default function MainPage() {
     }
 
     const { data } = await getAllPurchases();
-    if (data && data.length > 0) {
-      setPurchases(data);
-      setCurrentPurchase(data[0]);
-    } else {
-      setPurchases([SAMPLE_PURCHASE_REQUISITION]);
-      setCurrentPurchase(SAMPLE_PURCHASE_REQUISITION);
-    }
+    const savedPurchases = data || [];
+    setPurchases(savedPurchases);
+    setCurrentPurchase(createBlankPurchase(savedPurchases));
 
     setIsLoading(false);
   };
@@ -113,29 +122,7 @@ export default function MainPage() {
 
   // Handlers
   const handleAddNewFPP = () => {
-    const nextNomor = generateNextNomor(purchases);
-    const newDoc: PurchaseRequisition = {
-      ...DEFAULT_PURCHASE_REQUISITION,
-      id: 'fpp-' + Date.now(),
-      nomor: nextNomor,
-      tanggal: new Date().toISOString().split('T')[0],
-      tanggalDiterima: '',
-      photos: [],
-      dimintaTanggal: '',
-      dimintaOleh: 'ROYAN - RDI',
-      items: [
-        {
-          id: 'item-1',
-          no: 1,
-          namaBarang: '',
-          banyaknya: '',
-          hargaSatuan: 0,
-          jumlah: 0,
-          supplier: '',
-        },
-      ],
-    };
-    setCurrentPurchase(newDoc);
+    setCurrentPurchase(createBlankPurchase(purchases));
     setActiveTab('FORM');
     setSaveNotice('Formulir baru berhasil dibuat. Silakan ketik langsung pada formulir.');
     setTimeout(() => setSaveNotice(null), 3500);
@@ -152,6 +139,11 @@ export default function MainPage() {
   const handleSavePurchase = async () => {
     if (!currentPurchase.nomor || !currentPurchase.nomor.trim()) {
       alert('Nomor formulir tidak boleh kosong.');
+      return;
+    }
+
+    if (!currentPurchase.jenis) {
+      alert('Pilih jenis formulir: Rutin, Non Rutin, atau Segera.');
       return;
     }
 

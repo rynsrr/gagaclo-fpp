@@ -41,7 +41,7 @@ export default function PurchaseDocument({
   const {
     nomor = '',
     tanggal = '',
-    jenis = 'Rutin',
+    jenis = '',
     items = [],
     uraianKeperluan = '',
     tanggalDiterima = '',
