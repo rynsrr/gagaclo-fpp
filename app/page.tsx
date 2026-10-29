@@ -258,8 +258,16 @@ export default function MainPage() {
             </button>
           </nav>
 
-            {activeTab === 'FORM' && (
-              <div className="flex items-center gap-2" role="group" aria-label="Aksi formulir">
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <main className="flex-1 p-3 sm:p-6 max-w-7xl w-full mx-auto flex flex-col items-center">
+        {/* Render Direct Interactive Form Document */}
+        {activeTab === 'FORM' && (
+          <div className="w-full max-w-[210mm]">
+              <div className="no-print flex justify-end items-center gap-2 mb-3" role="group" aria-label="Aksi formulir">
                 <button
                     type="button"
                     onClick={handleAddNewFPP}
@@ -291,15 +299,6 @@ export default function MainPage() {
                     <Save className={`w-4 h-4 ${isSaving ? 'animate-pulse' : ''}`} />
                   </button>
               </div>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content Area */}
-      <main className="flex-1 p-3 sm:p-6 max-w-7xl w-full mx-auto flex flex-col items-center">
-        {/* Render Direct Interactive Form Document */}
-        {activeTab === 'FORM' && (
           <PurchaseDocument
             key={currentPurchase.id || 'current-fpp'}
             data={currentPurchase}
@@ -309,6 +308,7 @@ export default function MainPage() {
             saveNotice={saveNotice}
             isEditable={true}
           />
+          </div>
         )}
 
         {/* Render List */}
