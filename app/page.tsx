@@ -269,14 +269,6 @@ export default function MainPage() {
               />
             </button>
 
-            {/* Quick New Button */}
-            <button
-              onClick={handleAddNewFPP}
-              className="flex items-center space-x-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg shadow-sm transition active:scale-95"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Formulir Baru</span>
-            </button>
           </div>
         </div>
         {activeTab === 'FORM' && (
