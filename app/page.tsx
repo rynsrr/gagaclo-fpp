@@ -193,9 +193,6 @@ export default function MainPage() {
             </div>
             <div className="hidden sm:block h-6 w-px bg-slate-200 dark:bg-zinc-800" />
             <div className="hidden sm:flex items-center space-x-2">
-              <span className="px-2 py-0.5 text-[10px] uppercase font-bold bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-md border border-slate-300 dark:border-zinc-700">
-                FPP System
-              </span>
               <span className="text-[11px] text-slate-500 dark:text-zinc-400">
                 Formulir Permohonan Pembelian
               </span>
