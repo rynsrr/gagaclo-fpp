@@ -16,7 +16,6 @@ import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import PurchaseDocument from '@/components/purchase/PurchaseDocument';
 import PurchaseList from '@/components/purchase/PurchaseList';
 import PurchaseSummary from '@/components/purchase/PurchaseSummary';
-import SupabaseSetupModal from '@/components/purchase/SupabaseSetupModal';
 import PasswordModal from '@/components/purchase/PasswordModal';
 
 // Icons
@@ -50,10 +49,23 @@ function createBlankPurchase(purchases: PurchaseRequisition[]): PurchaseRequisit
 export default function MainPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('FORM');
   const [purchases, setPurchases] = useState<PurchaseRequisition[]>([]);
+  // Hitung penggunaan kuota database Supabase (Batas Free Tier: 500 MB)
+  const quotaUsageText = React.useMemo(() => {
+    try {
+      const bytes = new Blob([JSON.stringify(purchases)]).size;
+      const mb = bytes / (1024 * 1024);
+      if (mb < 0.01) {
+        const kb = Math.max(1, Math.round(bytes / 1024));
+        return `${kb} KB / 500 MB`;
+      }
+      return `${mb.toFixed(2)} MB / 500 MB`;
+    } catch {
+      return `${purchases.length} FPP / 500 MB`;
+    }
+  }, [purchases]);
   const [currentPurchase, setCurrentPurchase] = useState<PurchaseRequisition>(() => createBlankPurchase([]));
   const [isCloudReady, setIsCloudReady] = useState(false);
   const [isTableReady, setIsTableReady] = useState(false);
-  const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
@@ -391,23 +403,22 @@ export default function MainPage() {
               {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
             </button>
 
-            {/* Supabase Status Pill */}
-            <button
-              onClick={() => setIsSetupModalOpen(true)}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 transition shadow-sm"
-              aria-label={isTableReady ? 'Database terhubung' : 'Database perlu konfigurasi'}
-              title={isTableReady ? 'Database terhubung — klik untuk konfigurasi' : 'Database perlu konfigurasi — klik untuk menyiapkan'}
+            {/* Icon Penggunaan Kuota (Indikator Murni tanpa aksi klik) */}
+            <div
+              className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-medium bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm cursor-default select-none"
+              title={`Penggunaan Kuota Database: ${quotaUsageText} (${purchases.length} FPP tersimpan)`}
+              aria-label={`Kuota database ${quotaUsageText}`}
             >
-              <Database className="w-3.5 h-3.5 text-emerald-500" />
-              <span className="hidden sm:inline text-slate-700 dark:text-zinc-300">
-                {isTableReady && purchases.length > 0 ? `Database (${purchases.length})` : 'Database'}
+              <Database className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+              <span className="text-slate-700 dark:text-zinc-300 font-mono text-[11px] sm:text-xs">
+                {quotaUsageText}
               </span>
               <span
-                className={`w-2 h-2 rounded-full ${
+                className={`w-2 h-2 rounded-full shrink-0 ${
                   isTableReady ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'
                 }`}
               />
-            </button>
+            </div>
 
           </div>
           </div>
@@ -477,14 +488,7 @@ export default function MainPage() {
 
       </main>
 
-      {/* Supabase Setup Modal */}
-      <SupabaseSetupModal
-        isOpen={isSetupModalOpen}
-        onClose={() => setIsSetupModalOpen(false)}
-        isTableReady={isTableReady}
-        supabaseUrl={'https://xtkjzqeqotewaggjfnzr.supabase.co'}
-        purchasesCount={purchases.length}
-      />
+
 
       {/* Password Modal for Edit Access */}
       <PasswordModal
