@@ -46,11 +46,11 @@ CREATE TABLE IF NOT EXISTS public.purchase_requisitions (
 -- Index
 CREATE INDEX IF NOT EXISTS idx_purchase_requisitions_nomor ON public.purchase_requisitions(nomor);
 
--- Policy Akses Penuh
+-- Akses hanya untuk email Corporate yang terdaftar dan sudah login
 ALTER TABLE public.purchase_requisitions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow public full access to purchase_requisitions" 
-ON public.purchase_requisitions FOR ALL 
-USING (true) WITH CHECK (true);
+CREATE TABLE IF NOT EXISTS public.fpp_allowed_emails (email TEXT PRIMARY KEY);
+ALTER TABLE public.fpp_allowed_emails ENABLE ROW LEVEL SECURITY;
+-- Kelola anggota melalui administrator. Jangan buat policy akses publik.
 
 -- Realtime Sync
 ALTER PUBLICATION supabase_realtime ADD TABLE public.purchase_requisitions;`;

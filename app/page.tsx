@@ -12,6 +12,7 @@ import {
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 // Components
+import CorporateAuth from '@/components/purchase/CorporateAuth';
 import PurchaseDocument from '@/components/purchase/PurchaseDocument';
 import PurchaseList from '@/components/purchase/PurchaseList';
 import PurchaseSummary from '@/components/purchase/PurchaseSummary';
@@ -43,7 +44,11 @@ function createBlankPurchase(purchases: PurchaseRequisition[]): PurchaseRequisit
   };
 }
 
-export default function MainPage() {
+export default function Page() {
+  return <CorporateAuth><MainPage /></CorporateAuth>;
+}
+
+function MainPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('FORM');
   const [purchases, setPurchases] = useState<PurchaseRequisition[]>([]);
   const [currentPurchase, setCurrentPurchase] = useState<PurchaseRequisition>(() => createBlankPurchase([]));
@@ -264,6 +269,7 @@ export default function MainPage() {
                     <Save className={`w-4 h-4 ${isSaving ? 'animate-pulse' : ''}`} />
                   </button>
               </div>
+            <button onClick={async () => { if (confirmDiscard()) await supabase?.auth.signOut(); }} className="px-3 py-2 text-xs border border-zinc-200 dark:border-zinc-700 rounded-lg">Keluar</button>
             {/* Dark / Light Mode Toggle */}
             <button
               onClick={toggleTheme}
@@ -333,7 +339,7 @@ export default function MainPage() {
         isOpen={isSetupModalOpen}
         onClose={() => setIsSetupModalOpen(false)}
         isTableReady={isTableReady}
-        supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL || ''}
+        supabaseUrl={'https://xtkjzqeqotewaggjfnzr.supabase.co'}
       />
     </div>
   );

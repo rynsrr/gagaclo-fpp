@@ -1,7 +1,11 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+// Public browser credentials; database access is enforced by Corporate RLS policies.
+const corporateUrl = 'https://xtkjzqeqotewaggjfnzr.supabase.co';
+const supabaseUrl = corporateUrl;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_URL === corporateUrl
+  ? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_R0UVw4tSyvLWu0muMjOSYA_BNqKWyEv'
+  : 'sb_publishable_R0UVw4tSyvLWu0muMjOSYA_BNqKWyEv';
 
 export const isSupabaseConfigured = (): boolean => {
   return Boolean(
