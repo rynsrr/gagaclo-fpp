@@ -25,7 +25,6 @@ import {
   Plus,
   Database,
   Save,
-  Sparkles,
   Sun,
   Moon,
 } from 'lucide-react';
@@ -148,19 +147,6 @@ export default function MainPage() {
       ...prev,
       nomor: nextNomor,
     }));
-  };
-
-  const handleLoadSample = () => {
-    if (confirm('Muat contoh data PT Gagaclo? Data formulir saat ini akan digantikan.')) {
-      const nextNomor = generateNextNomor(purchases);
-      setCurrentPurchase({
-        ...SAMPLE_PURCHASE_REQUISITION,
-        id: 'fpp-' + Date.now(),
-        nomor: nextNomor,
-      });
-      setSaveNotice('Contoh data formulir PT Gagaclo berhasil dimuat.');
-      setTimeout(() => setSaveNotice(null), 3500);
-    }
   };
 
   const handleSavePurchase = async () => {
@@ -300,15 +286,6 @@ export default function MainPage() {
             <div className="flex flex-wrap items-center gap-2">
               {/* Secondary actions group */}
               <div className="flex items-center gap-1.5 bg-white/5 dark:bg-white/[0.03] rounded-xl p-1 border border-white/10 dark:border-white/[0.06]">
-                <button
-                    type="button"
-                    onClick={handleLoadSample}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-zinc-300 hover:text-white hover:bg-white/10 text-xs font-medium rounded-lg transition"
-                    title="Muat contoh data PT Gagaclo"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                    <span className="hidden md:inline">Contoh Data</span>
-                  </button>
 
                 <button
                     type="button"
