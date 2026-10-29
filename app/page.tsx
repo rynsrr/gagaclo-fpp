@@ -18,7 +18,6 @@ import SupabaseSetupModal from '@/components/purchase/SupabaseSetupModal';
 // Icons
 import {
   FileText,
-  ListFilter,
   Printer,
   Plus,
   Database,
@@ -27,7 +26,7 @@ import {
   Moon,
 } from 'lucide-react';
 
-type ActiveTab = 'FORM' | 'LIST';
+type ActiveTab = 'FORM';
 
 function createBlankPurchase(purchases: PurchaseRequisition[]): PurchaseRequisition {
   const now = new Date();
@@ -244,18 +243,6 @@ export default function MainPage() {
               <FileText className="w-3.5 h-3.5" />
               <span>Formulir FPP</span>
             </button>
-
-            <button
-              onClick={() => setActiveTab('LIST')}
-              className={`flex items-center space-x-1.5 px-2.5 sm:px-3.5 py-2 rounded-lg transition ${
-                activeTab === 'LIST'
-                  ? 'bg-blue-600 text-white font-semibold shadow'
-                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <ListFilter className="w-3.5 h-3.5" />
-              <span>Daftar FPP ({purchases.length})</span>
-            </button>
           </nav>
 
           </div>
@@ -312,8 +299,8 @@ export default function MainPage() {
         )}
 
         {/* Render List */}
-        {activeTab === 'LIST' && (
-          <div className="w-full">
+        {activeTab === 'FORM' && (
+          <div className="no-print w-full mt-8">
             <PurchaseList
               purchases={purchases}
               onSelectForEdit={handleSelectForEdit}
