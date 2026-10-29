@@ -9,7 +9,6 @@ import { compressImage } from '@/lib/imageUtils';
 import {
   Plus,
   Trash2,
-  Camera,
   Image as ImageIcon,
   CheckCircle2,
   RotateCcw,
@@ -875,31 +874,6 @@ export default function PurchaseDocument({
           {/* Header Lampiran (Hanya tulis LAMPIRAN) */}
           <div className="w-full border border-black py-1 font-bold text-[12px] tracking-wider uppercase text-left bg-white flex items-center justify-between px-3 relative">
             <span className="font-bold tracking-wider text-left">LAMPIRAN</span>
-            {isEditable ? (
-              <div className="no-print flex items-center space-x-1.5">
-                <button
-                  type="button"
-                  onClick={handlePasteFromClipboard}
-                  disabled={isUploadingPhoto || photoCount >= 6}
-                  className="flex items-center space-x-1 px-2.5 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[10px] font-medium rounded border border-emerald-300 transition active:scale-95 disabled:opacity-40"
-                  title="Tempel gambar dari clipboard (Ctrl+V)"
-                >
-                  <Clipboard className="w-3 h-3 text-emerald-600" />
-                  <span>Tempel (Ctrl+V)</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploadingPhoto || photoCount >= 6}
-                  className="flex items-center space-x-1 px-2.5 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] font-medium rounded border border-blue-300 transition active:scale-95 disabled:opacity-40"
-                  title="Pilih file foto dari komputer"
-                >
-                  <Camera className="w-3 h-3 text-blue-600" />
-                  <span>+ Upload ({photoCount}/6)</span>
-                </button>
-              </div>
-            ) : null}
           </div>
 
           {/* Hidden File Input for Image Upload */}
