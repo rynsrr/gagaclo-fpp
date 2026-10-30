@@ -28,6 +28,11 @@ interface PurchaseListProps {
   currentUser?: string | null;
   onDuplicate?: (item: PurchaseRequisition) => void;
   onDelete?: (id: string, nomor: string) => void;
+  selectedUser?: string;
+  onSelectUser?: (user: string) => void;
+  availableUsers?: string[];
+  userCounts?: Record<string, number>;
+  totalAllPurchases?: number;
 }
 
 export default function PurchaseList({
@@ -41,14 +46,29 @@ export default function PurchaseList({
   canEdit=true,
   canDelete=true,
   currentUser=null,
+  selectedUser: propSelectedUser,
+  onSelectUser: propOnSelectUser,
+  availableUsers: propAvailableUsers,
+  userCounts: propUserCounts,
+  totalAllPurchases,
 }: PurchaseListProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedUser, setSelectedUser] = useState<string>('ALL');
+  const [localSelectedUser, setLocalSelectedUser] = useState<string>('ALL');
+
+  const selectedUser = propSelectedUser !== undefined ? propSelectedUser : localSelectedUser;
+  const setSelectedUser = (user: string) => {
+    if (propOnSelectUser) {
+      propOnSelectUser(user);
+    } else {
+      setLocalSelectedUser(user);
+    }
+  };
 
   // Daftar akun peminta (standar + yang ada di data riwayat)
   const availableUsers = useMemo(() => {
+    if (propAvailableUsers) return propAvailableUsers;
     const defaultUsers = ['Royan', 'Ryan', 'Ami', 'Hanami', 'Cynara'];
     const map = new Map<string, string>();
 
@@ -74,10 +94,11 @@ export default function PurchaseList({
     });
 
     return Array.from(map.values());
-  }, [purchases]);
+  }, [purchases, propAvailableUsers]);
 
   // Hitung jumlah formulir per user
   const userCounts = useMemo(() => {
+    if (propUserCounts) return propUserCounts;
     const counts: Record<string, number> = {};
     availableUsers.forEach((u) => {
       const key = u.toLowerCase();
@@ -88,7 +109,7 @@ export default function PurchaseList({
       }).length;
     });
     return counts;
-  }, [availableUsers, purchases]);
+  }, [availableUsers, purchases, propUserCounts]);
 
   const filteredPurchases = useMemo(() => {
     return purchases.filter((purchase) => {
@@ -161,7 +182,7 @@ export default function PurchaseList({
               aria-label="Filter berdasarkan akun"
               className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-2.5 py-2 text-xs font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-400 cursor-pointer"
             >
-              <option value="ALL">Semua User ({purchases.length})</option>
+              <option value="ALL">Semua User ({totalAllPurchases !== undefined ? totalAllPurchases : purchases.length})</option>
               {availableUsers.map((user) => {
                 const count = userCounts[user.toLowerCase()] || 0;
                 return (
@@ -198,7 +219,7 @@ export default function PurchaseList({
                   : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300'
               }`}
             >
-              {purchases.length}
+              {totalAllPurchases !== undefined ? totalAllPurchases : purchases.length}
             </span>
           </button>
 

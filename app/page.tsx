@@ -160,6 +160,78 @@ export default function MainPage() {
   const [savedFingerprint, setSavedFingerprint] = useState('');
   const [draftReady, setDraftReady] = useState(false);
   const [drafts, setDrafts] = useState<ReturnType<typeof listDrafts>>([]);
+  const [selectedUser, setSelectedUser] = useState<string>('ALL');
+
+  // Daftar akun peminta untuk kategori/filter (standar + yang ada di riwayat & draft)
+  const availableUsers = React.useMemo(() => {
+    const defaultUsers = ['Royan', 'Ryan', 'Ami', 'Hanami', 'Cynara'];
+    const map = new Map<string, string>();
+    defaultUsers.forEach((u) => map.set(u.toLowerCase(), u));
+
+    purchases.forEach((p) => {
+      const peminta = (p.dimintaOleh || '').trim();
+      if (peminta && !map.has(peminta.toLowerCase())) {
+        map.set(peminta.toLowerCase(), peminta.charAt(0).toUpperCase() + peminta.slice(1));
+      }
+      if (p.nomor && p.nomor.includes('-')) {
+        const prefix = p.nomor.split('-')[0].trim();
+        if (prefix && prefix !== 'FPP' && !map.has(prefix.toLowerCase())) {
+          map.set(prefix.toLowerCase(), prefix.charAt(0).toUpperCase() + prefix.slice(1).toLowerCase());
+        }
+      }
+    });
+
+    drafts.forEach((d) => {
+      const peminta = (d.purchase.dimintaOleh || '').trim();
+      if (peminta && !map.has(peminta.toLowerCase())) {
+        map.set(peminta.toLowerCase(), peminta.charAt(0).toUpperCase() + peminta.slice(1));
+      }
+      if (d.purchase.nomor && d.purchase.nomor.includes('-')) {
+        const prefix = d.purchase.nomor.split('-')[0].trim();
+        if (prefix && prefix !== 'FPP' && !map.has(prefix.toLowerCase())) {
+          map.set(prefix.toLowerCase(), prefix.charAt(0).toUpperCase() + prefix.slice(1).toLowerCase());
+        }
+      }
+    });
+
+    return Array.from(map.values());
+  }, [purchases, drafts]);
+
+  // Hitung jumlah formulir per user
+  const userCounts = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    availableUsers.forEach((u) => {
+      const key = u.toLowerCase();
+      counts[key] = purchases.filter((p) => {
+        const peminta = (p.dimintaOleh || '').trim().toLowerCase();
+        const nomor = (p.nomor || '').trim().toUpperCase();
+        return peminta === key || nomor.startsWith(key.toUpperCase() + '-');
+      }).length;
+    });
+    return counts;
+  }, [availableUsers, purchases]);
+
+  // Filter permohonan sesuai kategori user (mempengaruhi Ringkasan & Tabel)
+  const filteredPurchasesByUser = React.useMemo(() => {
+    if (selectedUser === 'ALL') return purchases;
+    const cleanUser = selectedUser.trim().toLowerCase();
+    return purchases.filter((p) => {
+      const peminta = (p.dimintaOleh || '').trim().toLowerCase();
+      const nomor = (p.nomor || '').trim().toUpperCase();
+      return peminta === cleanUser || nomor.startsWith(cleanUser.toUpperCase() + '-');
+    });
+  }, [purchases, selectedUser]);
+
+  // Filter draft sesuai kategori user (mempengaruhi Draft perangkat ini)
+  const filteredDrafts = React.useMemo(() => {
+    if (selectedUser === 'ALL') return drafts;
+    const cleanUser = selectedUser.trim().toLowerCase();
+    return drafts.filter((d) => {
+      const peminta = (d.purchase.dimintaOleh || '').trim().toLowerCase();
+      const nomor = (d.purchase.nomor || '').trim().toUpperCase();
+      return peminta === cleanUser || nomor.startsWith(cleanUser.toUpperCase() + '-');
+    });
+  }, [drafts, selectedUser]);
   const currentRef = useRef(currentPurchase);
   currentRef.current = currentPurchase;
   const dirty = draftReady && fingerprint(currentPurchase) !== savedFingerprint;
@@ -449,10 +521,15 @@ export default function MainPage() {
       e.preventDefault();
       e.stopPropagation();
     }
-    if (confirm(`Apakah Anda yakin ingin menghapus SEMUA (${drafts.length}) draft dari perangkat ini?`)) {
-      drafts.forEach((d) => removeDraft(d.purchase.id));
+    const targetDrafts = filteredDrafts;
+    if (!targetDrafts.length) return;
+    const promptMsg = selectedUser !== 'ALL'
+      ? `Apakah Anda yakin ingin menghapus SEMUA (${targetDrafts.length}) draft untuk user ${selectedUser} dari perangkat ini?`
+      : `Apakah Anda yakin ingin menghapus SEMUA (${drafts.length}) draft dari perangkat ini?`;
+    if (confirm(promptMsg)) {
+      targetDrafts.forEach((d) => removeDraft(d.purchase.id));
       setDrafts(listDrafts());
-      if (drafts.some((d) => d.purchase.id === currentPurchase.id)) {
+      if (targetDrafts.some((d) => d.purchase.id === currentPurchase.id)) {
         openPurchase(createBlankPurchase(purchases), false);
       }
     }
@@ -629,21 +706,29 @@ export default function MainPage() {
             </div>
 
             <div className="no-print min-w-0 space-y-4">
-              {!!drafts.length && (
+              {/* Draft perangkat ini (terfilter mengikuti kategori user) */}
+              {filteredDrafts.length > 0 && (
                 <details className="rounded-xl border border-slate-200 dark:border-zinc-800 p-3 text-xs bg-white dark:bg-zinc-900" open>
                   <summary className="cursor-pointer font-semibold flex items-center justify-between select-none">
-                    <span>Draft perangkat ini ({drafts.length})</span>
+                    <span>
+                      Draft perangkat ini ({filteredDrafts.length})
+                      {selectedUser !== 'ALL' && (
+                        <span className="ml-1 text-slate-500 font-normal">
+                          • {selectedUser}
+                        </span>
+                      )}
+                    </span>
                     <button
                       type="button"
                       onClick={handleClearAllDrafts}
                       className="text-[11px] font-normal text-red-500 hover:text-red-700 hover:underline px-1 py-0.5"
-                      title="Bersihkan semua draft lokal"
+                      title={selectedUser !== 'ALL' ? `Bersihkan semua draft ${selectedUser}` : 'Bersihkan semua draft lokal'}
                     >
                       Hapus Semua
                     </button>
                   </summary>
                   <div className="space-y-2 mt-3">
-                    {drafts.map((draft) => (
+                    {filteredDrafts.map((draft) => (
                       <div
                         key={draft.purchase.id}
                         className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 dark:border-zinc-800 p-2 hover:bg-slate-50 dark:hover:bg-zinc-800/60 transition group"
@@ -681,8 +766,10 @@ export default function MainPage() {
                 </details>
               )}
 
-              <PurchaseSummary purchases={purchases} />
+              {/* Ringkasan FPP (terfilter mengikuti kategori user) */}
+              <PurchaseSummary purchases={filteredPurchasesByUser} userName={selectedUser} />
 
+              {/* Daftar FPP */}
               <PurchaseList
                 purchases={purchases}
                 onSelectForEdit={handleSelectForEdit}
@@ -694,6 +781,11 @@ export default function MainPage() {
                 canDelete={Boolean(currentUser)}
                 currentUser={currentUser}
                 onRefresh={() => loadData()}
+                selectedUser={selectedUser}
+                onSelectUser={setSelectedUser}
+                availableUsers={availableUsers}
+                userCounts={userCounts}
+                totalAllPurchases={purchases.length}
               />
             </div>
           </div>

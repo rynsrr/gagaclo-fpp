@@ -1,15 +1,36 @@
 import { PurchaseRequisition } from '@/types/purchase';
 
-export default function PurchaseSummary({ purchases }: { purchases: PurchaseRequisition[] }) {
+interface PurchaseSummaryProps {
+  purchases: PurchaseRequisition[];
+  userName?: string;
+}
+
+export default function PurchaseSummary({ purchases, userName = 'ALL' }: PurchaseSummaryProps) {
   const received = purchases.filter((purchase) =>
     Boolean(purchase.tanggalDiterima?.trim()) ||
     purchase.status === 'Diterima' || purchase.status === 'Selesai'
   ).length;
+
+  const isFiltered = userName && userName !== 'ALL';
+
   const cards = [
-    { label: 'Total Permohonan', count: purchases.length, description: 'Dokumen terdaftar' },
-    { label: 'Belum Diterima', count: purchases.length - received, description: 'Menunggu penerimaan' },
-    { label: 'Sudah Diterima', count: received, description: 'Penerimaan tercatat' },
+    {
+      label: isFiltered ? `Permohonan (${userName})` : 'Total Permohonan',
+      count: purchases.length,
+      description: isFiltered ? `Dokumen milik ${userName}` : 'Dokumen terdaftar',
+    },
+    {
+      label: 'Belum Diterima',
+      count: purchases.length - received,
+      description: 'Menunggu penerimaan',
+    },
+    {
+      label: 'Sudah Diterima',
+      count: received,
+      description: 'Penerimaan tercatat',
+    },
   ];
+
   return (
     <aside aria-label="Ringkasan FPP" className="no-print min-w-0 grid grid-cols-3 gap-2 content-start">
       {cards.map((card) => (
