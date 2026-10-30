@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
+import { revalidateTag } from 'next/cache';
 import { r2Client, r2Ready, sign, validSession } from '@/lib/r2';
 
 export const runtime = 'nodejs';
@@ -18,6 +19,7 @@ export async function POST(request: NextRequest) {
     if (body[0] !== 0xff || body[1] !== 0xd8 || body[2] !== 0xff) return NextResponse.json({ error: 'Format foto tidak valid.' }, { status: 400 });
     const key = `${randomUUID()}.jpg`;
     await r2Client().send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET_NAME, Key: `attachments/${key}`, Body: body, ContentType: 'image/jpeg' }));
+    revalidateTag('r2-storage-usage');
     return NextResponse.json({ url: `/api/attachments/${key}?signature=${sign(`read:${key}`)}` });
   } catch {
     return NextResponse.json({ error: 'Unggah R2 gagal. Coba lagi.' }, { status: 502 });

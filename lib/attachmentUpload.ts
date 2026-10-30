@@ -8,5 +8,6 @@ export async function uploadAttachment(dataUrl: string): Promise<string> {
   const response = await fetch('/api/attachments', { method: 'POST', body: form });
   const result = await response.json();
   if (!response.ok) throw new Error(result.error || 'Unggah lampiran gagal.');
+  window.dispatchEvent(new Event('fpp-attachments-updated'));
   return result.url;
 }

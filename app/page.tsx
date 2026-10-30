@@ -17,6 +17,7 @@ import PurchaseDocument from '@/components/purchase/PurchaseDocument';
 import PurchaseList from '@/components/purchase/PurchaseList';
 import PurchaseSummary from '@/components/purchase/PurchaseSummary';
 import PasswordModal from '@/components/purchase/PasswordModal';
+import R2Quota from '@/components/purchase/R2Quota';
 
 // Icons
 import {
@@ -336,7 +337,7 @@ export default function MainPage() {
           </div>
 
           {/* Right Status & Fast Action */}
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             {/* Mode Edit Lock / Unlock Button */}
             {!isEditUnlocked ? (
               <button
@@ -420,6 +421,7 @@ export default function MainPage() {
                 }`}
               />
             </div>
+            <R2Quota />
 
           </div>
           </div>
