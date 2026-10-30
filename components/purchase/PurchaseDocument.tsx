@@ -5,7 +5,6 @@ import { uploadAttachment } from '@/lib/attachmentUpload';
 import React, { useRef, useState, useEffect } from 'react';
 import { PurchaseRequisition, PurchaseItem, PurchaseJenis, PurchasePhoto } from '@/types/purchase';
 import { formatRupiah, formatShortDate, calculateItemAmount } from '@/lib/purchaseService';
-import { SIGNATURE_ROYAN_SRC } from '@/lib/logoData';
 import GagacloLogo from '@/components/GagacloLogo';
 import { compressImage } from '@/lib/imageUtils';
 import {
@@ -791,27 +790,20 @@ export default function PurchaseDocument({
                 </div>
               </div>
 
-              {/* 2. Diminta (Tanda Tangan Asli ROYAN & Nama di Bawah) */}
+              {/* 2. Diminta: nama bergaya tanda tangan mengikuti nama peminta. */}
               <div className="border-r border-black flex flex-col justify-between">
                 <div className="border-b border-black h-[22px] flex items-center justify-center font-semibold text-[9.5px]">
                   Diminta
                 </div>
                 <div className="flex-1 min-h-[44px] flex flex-col items-center justify-center p-0.5 relative select-none overflow-hidden">
-                  {/* Tanda Tangan Stroke / Paraf */}
-                  <img
-                    src={SIGNATURE_ROYAN_SRC}
-                    alt="Tanda Tangan Diminta"
-                    className="h-7 w-auto object-contain block mix-blend-multiply opacity-80"
-                    style={{ maxHeight: '30px' }}
-                  />
-                  {/* Nama Royan dengan Style Signature */}
+                  {/* Gunakan sumber nama yang sama untuk layar dan cetak. */}
                   <span
-                    className="font-signature text-[21px] font-bold text-black tracking-wide leading-none -mt-3.5 transform -rotate-3 select-none"
+                    className="font-signature text-[21px] font-bold text-black tracking-wide leading-none transform -rotate-3 select-none w-full text-center truncate"
                     style={{
                       fontFamily: "var(--font-great-vibes), 'Great Vibes', var(--font-dancing-script), 'Dancing Script', 'Brush Script MT', cursive",
                     }}
                   >
-                    Royan
+                    {dimintaOleh || ''}
                   </span>
                 </div>
                 <div className="border-t border-black h-[22px] flex items-center justify-center text-[9px] font-medium text-black px-0.5">
@@ -824,10 +816,10 @@ export default function PurchaseDocument({
                         placeholder="ROYAN"
                         className="w-full text-center bg-transparent hover:bg-blue-50/40 focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 focus:outline-none text-[9px] font-medium print:hidden rounded"
                       />
-                      <span className="hidden print:inline truncate">{dimintaOleh || 'ROYAN'}</span>
+                      <span className="hidden print:inline truncate">{dimintaOleh || ''}</span>
                     </>
                   ) : (
-                    <span className="truncate">{dimintaOleh || 'ROYAN'}</span>
+                    <span className="truncate">{dimintaOleh || ''}</span>
                   )}
                 </div>
               </div>
