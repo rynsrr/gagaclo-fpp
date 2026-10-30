@@ -101,29 +101,6 @@ export default function PurchaseDocument({
     });
   };
 
-  const parseQtySatuan = (banyaknya?: string) => {
-    const trimmed = String(banyaknya || '').trim();
-    const match = trimmed.match(/^(\d+(?:[.,]\d+)?)\s*(.*)$/);
-    if (match) {
-      return { qty: match[1], satuan: match[2] };
-    }
-    return { qty: '', satuan: trimmed };
-  };
-
-  const handleQtyChange = (index: number, newQty: string, currentSatuan: string) => {
-    const cleanQty = String(newQty || '').trim();
-    const cleanSat = String(currentSatuan || '').trim();
-    const combined = cleanQty ? (cleanSat ? `${cleanQty} ${cleanSat}` : cleanQty) : cleanSat;
-    handleItemChange(index, 'banyaknya', combined);
-  };
-
-  const handleSatuanChange = (index: number, currentQty: string, newSatuan: string) => {
-    const cleanQty = String(currentQty || '').trim();
-    const cleanSat = String(newSatuan || '').trim();
-    const combined = cleanQty ? (cleanSat ? `${cleanQty} ${cleanSat}` : cleanQty) : cleanSat;
-    handleItemChange(index, 'banyaknya', combined);
-  };
-
   const itemNameInputs = useRef<Array<HTMLInputElement | null>>([]);
   const pendingItemFocus = useRef<number | null>(null);
   const handleNextItemOnEnter = (event: React.KeyboardEvent<HTMLInputElement>, index: number) => {
@@ -563,33 +540,19 @@ export default function PurchaseDocument({
                         <span className="break-words">{item.namaBarang}</span>
                       )}
                     </td>
-                    {/* Banyaknya (Jumlah & Satuan terpisah tapi fit rapi) */}
+
+                    {/* Banyaknya */}
                     <td className="border-r border-black px-1 py-0.5 text-center font-normal">
                       {isEditable ? (
                         <>
-                          <div className="flex items-center justify-center w-full gap-1 print:hidden">
-                            <input
-                              type="number"
-                              min="0"
-                              step="any"
-                              value={parseQtySatuan(item.banyaknya).qty}
-                              onChange={(e) => handleQtyChange(index, e.target.value, parseQtySatuan(item.banyaknya).satuan)}
-                              onKeyDown={(event) => handleNextItemOnEnter(event, index)}
-                              placeholder="1"
-                              className="w-1/2 min-w-0 text-right bg-transparent hover:bg-blue-50/40 focus:bg-blue-50/80 focus:ring-1 focus:ring-blue-400 focus:outline-none px-1 py-0.5 text-[10.5px] rounded transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-gray-400 font-medium"
-                              title="Jumlah / Kuantitas (angka)"
-                            />
-                            <input
-                              type="text"
-                              list="fpp-unit-options"
-                              value={parseQtySatuan(item.banyaknya).satuan}
-                              onChange={(e) => handleSatuanChange(index, parseQtySatuan(item.banyaknya).qty, e.target.value)}
-                              onKeyDown={(event) => handleNextItemOnEnter(event, index)}
-                              placeholder="Pcs"
-                              className="w-1/2 min-w-0 text-left bg-transparent hover:bg-blue-50/40 focus:bg-blue-50/80 focus:ring-1 focus:ring-blue-400 focus:outline-none px-1 py-0.5 text-[10.5px] rounded transition placeholder:text-gray-400 text-gray-700 dark:text-zinc-300 font-medium uppercase"
-                              title="Satuan (Pcs, Unit, Box, Roll, Kg, Meter, dsb)"
-                            />
-                          </div>
+                          <input
+                            type="text"
+                            value={item.banyaknya}
+                            onChange={(e) => handleItemChange(index, 'banyaknya', e.target.value)}
+                            onKeyDown={(event) => handleNextItemOnEnter(event, index)}
+                            placeholder="e.g. 10 Pcs"
+                            className="w-full text-center bg-transparent hover:bg-blue-50/40 focus:bg-blue-50/80 focus:ring-1 focus:ring-blue-400 focus:outline-none px-1 py-0.5 text-[10.5px] rounded transition print:hidden placeholder:text-gray-400 placeholder:italic"
+                          />
                           <span className="hidden print:inline-block whitespace-nowrap">
                             {item.banyaknya || (item.qty ? `${item.qty} ${item.satuan || ''}` : '')}
                           </span>

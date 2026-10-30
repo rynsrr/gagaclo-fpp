@@ -331,68 +331,81 @@ export default function MainPage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             {/* Logo & Company Title */}
             <div className="flex items-center space-x-3">
-              <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-black dark:bg-white text-white dark:text-black font-extrabold text-sm tracking-wider shadow-sm">
-                FPP
+              <div className="flex items-center">
+                <span className="text-[28px] sm:text-[32px] leading-none font-bold tracking-tight text-black dark:text-white">
+                  FPP
+                </span>
               </div>
               <div className="hidden sm:block h-6 w-px bg-slate-200 dark:bg-zinc-800" />
-              <div className="flex flex-col">
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">
-                    PT GAGACLO
-                  </span>
-                  <span className="text-xs text-slate-400 dark:text-zinc-500 hidden sm:inline">•</span>
-                  <span className="text-xs font-medium text-slate-500 dark:text-zinc-400 hidden sm:inline">
-                    Formulir Permohonan Pembelian
-                  </span>
-                </div>
-                <span className="text-[10px] text-slate-500 dark:text-zinc-400 sm:hidden">
-                  Formulir Permohonan Pembelian
+              <div className="hidden sm:flex items-center space-x-2">
+                <span className="text-sm sm:text-base font-semibold uppercase tracking-wide text-slate-700 dark:text-zinc-200">
+                  FORMULIR PERMOHONAN PEMBELIAN
                 </span>
               </div>
             </div>
 
-            {/* Right Fast Actions */}
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                disabled={isLoading}
-                onClick={handleAddNewFPP}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800 transition active:scale-95 disabled:opacity-50 text-xs font-semibold shadow-sm"
-                title="Buat formulir baru dengan nomor urut berikutnya"
-              >
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">Baru</span>
-              </button>
+            {/* Right Status & Fast Action */}
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <div className="no-print flex items-center gap-2" role="group" aria-label="Aksi formulir">
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  onClick={handleAddNewFPP}
+                  className="inline-flex items-center justify-center w-10 h-10 shrink-0 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition active:scale-95 disabled:opacity-50 shadow-sm"
+                  aria-label="Formulir baru"
+                  title="Buat formulir baru dengan nomor urut berikutnya"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="inline-flex items-center justify-center w-10 h-10 shrink-0 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition active:scale-95 disabled:opacity-50 shadow-sm"
+                  aria-label="Cetak / PDF"
+                  title="Cetak langsung atau simpan sebagai PDF A4 (Pasti 1 Halaman)"
+                >
+                  <Printer className="w-4 h-4" />
+                </button>
 
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800 transition active:scale-95 disabled:opacity-50 text-xs font-semibold shadow-sm"
-                title="Cetak langsung atau simpan sebagai PDF A4 (Pasti 1 Halaman)"
-              >
-                <Printer className="w-4 h-4" />
-                <span className="hidden sm:inline">Cetak PDF</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleSavePurchase}
-                disabled={isSaving || isLoading}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition active:scale-95 disabled:opacity-50 text-xs font-semibold shadow-sm"
-                title="Simpan formulir ke database Supabase dan penyimpanan lokal"
-              >
-                <Save className={`w-4 h-4 ${isSaving ? 'animate-pulse' : ''}`} />
-                <span>{isSaving ? 'Menyimpan...' : 'Simpan'}</span>
-              </button>
+                <button
+                  type="button"
+                  onClick={handleSavePurchase}
+                  disabled={isSaving || isLoading}
+                  className="inline-flex items-center justify-center w-10 h-10 shrink-0 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-emerald-600 hover:bg-emerald-700 text-white transition active:scale-95 disabled:opacity-50 shadow-sm"
+                  aria-label={isSaving ? 'Menyimpan...' : 'Simpan FPP'}
+                  aria-busy={isSaving}
+                  title="Simpan formulir ke database Supabase dan penyimpanan lokal"
+                >
+                  <Save className={`w-4 h-4 ${isSaving ? 'animate-pulse' : ''}`} />
+                </button>
+              </div>
 
               {/* Dark / Light Mode Toggle */}
               <button
                 onClick={toggleTheme}
-                className="p-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white transition shadow-sm ml-1"
+                className="p-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white transition shadow-sm"
                 title={theme === 'dark' ? 'Ganti ke Light Mode' : 'Ganti ke Dark Mode'}
               >
                 {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
               </button>
+
+              {/* Icon Penggunaan Kuota (Indikator Murni tanpa aksi klik) */}
+              <div
+                className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-medium bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm cursor-default select-none"
+                title={`Penggunaan Kuota Database: ${quotaUsageText} (${purchases.length} FPP tersimpan)`}
+                aria-label={`Kuota database ${quotaUsageText}`}
+              >
+                <Database className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <span className="text-slate-700 dark:text-zinc-300 font-mono text-[11px] sm:text-xs">
+                  {quotaUsageText}
+                </span>
+                <span
+                  className={`w-2 h-2 rounded-full shrink-0 ${
+                    isTableReady ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'
+                  }`}
+                />
+              </div>
+              <R2Quota />
             </div>
           </div>
         </div>
@@ -415,23 +428,6 @@ export default function MainPage() {
             </div>
 
             <div className="no-print min-w-0 space-y-4">
-              {/* Storage & Cloud Status */}
-              <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs text-slate-600 dark:text-zinc-400 shadow-sm">
-                <div className="flex items-center space-x-2">
-                  <Database className="w-3.5 h-3.5 text-emerald-500" />
-                  <span className="font-mono text-[11px] text-slate-700 dark:text-zinc-300">
-                    {quotaUsageText}
-                  </span>
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      isTableReady ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'
-                    }`}
-                    title={isTableReady ? 'Database Terhubung' : 'Sedang Memeriksa'}
-                  />
-                </div>
-                <R2Quota />
-              </div>
-
               {!!drafts.length && (
                 <details className="rounded-xl border border-slate-200 dark:border-zinc-800 p-3 text-xs bg-white dark:bg-zinc-900">
                   <summary className="cursor-pointer font-semibold">
