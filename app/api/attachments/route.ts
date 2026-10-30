@@ -2,15 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
 import { revalidateTag } from 'next/cache';
-import { allowed } from '@/lib/serverAccess';
-import { r2Client, r2Ready, sign, validSession } from '@/lib/r2';
+import { r2Client, r2Ready, sign } from '@/lib/r2';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export async function GET() { return NextResponse.json({ enabled: r2Ready() }, { headers: { 'Cache-Control': 'no-store' } }); }
+
+export async function GET() {
+  return NextResponse.json({ enabled: r2Ready() }, { headers: { 'Cache-Control': 'no-store' } });
+}
+
 export async function POST(request: NextRequest) {
   if (!r2Ready()) return NextResponse.json({ error: 'R2 belum dikonfigurasi.' }, { status: 503 });
-  if (request.headers.get('origin') !== request.nextUrl.origin || !await allowed(request,true)) return NextResponse.json({ error: 'Buka ulang mode edit untuk mengunggah lampiran.' }, { status: 401 });
   const size = Number(request.headers.get('content-length'));
   if (!Number.isFinite(size) || size > 4_000_000) return NextResponse.json({ error: 'Maksimal foto terkompresi 4 MB.' }, { status: 413 });
   try {
