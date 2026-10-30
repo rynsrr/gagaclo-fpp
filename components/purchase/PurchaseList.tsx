@@ -12,6 +12,7 @@ import {
   AlertTriangle,
   ArrowUpDown,
   Copy,
+  Eye,
 } from 'lucide-react';
 
 interface PurchaseListProps {
@@ -22,6 +23,7 @@ interface PurchaseListProps {
   onRefresh: () => void;
   canEdit?: boolean;
   canDelete?: boolean;
+  currentUser?: string | null;
   onDuplicate?: (item: PurchaseRequisition) => void;
   onDelete?: (id: string, nomor: string) => void;
 }
@@ -36,6 +38,7 @@ export default function PurchaseList({
   onDuplicate,
   canEdit=true,
   canDelete=true,
+  currentUser=null,
 }: PurchaseListProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -170,26 +173,61 @@ export default function PurchaseList({
                       {/* Actions */}
                       <td className="py-2 px-1.5 text-center whitespace-nowrap">
                         <div className="flex items-center justify-center gap-0.5">
-                          {/* Edit */}
-                          <button
-                            disabled={!canEdit}
-                            onClick={() => onSelectForEdit(item)}
-                            className="p-1 text-zinc-400 hover:text-blue-400 hover:bg-blue-950/30 rounded-lg transition"
-                            title="Edit Formulir"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </button>
+                          {/* Actions: Edit vs View based on ownership */}
+                          {(() => {
+                            const isOwner = Boolean(
+                              currentUser && (
+                                (item.dimintaOleh || '').trim().toLowerCase() === currentUser.trim().toLowerCase() ||
+                                (item.nomor || '').trim().toUpperCase().startsWith(currentUser.trim().toUpperCase() + '-')
+                              )
+                            );
 
-                          {canEdit && onDuplicate && <button type="button" onClick={()=>onDuplicate(item)} className="p-1 text-zinc-400 hover:text-blue-500 rounded-lg" title="Duplikat FPP" aria-label={`Duplikat ${item.nomor}`}><Copy className="w-4 h-4"/></button>}
-                          {/* Delete */}
-                          <button
-                            onClick={() => handleDelete(item.id, item.nomor)}
-                            disabled={!canDelete || deletingId === item.id}
-                            className="p-1 text-zinc-400 hover:text-red-400 hover:bg-red-950/30 rounded-lg transition disabled:opacity-50"
-                            title="Hapus Formulir"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                            return (
+                              <>
+                                {isOwner ? (
+                                  <button
+                                    disabled={!canEdit}
+                                    onClick={() => onSelectForEdit(item)}
+                                    className="p-1 text-zinc-400 hover:text-blue-400 hover:bg-blue-950/30 rounded-lg transition"
+                                    title="Edit Formulir Saya"
+                                  >
+                                    <Edit3 className="w-4 h-4" />
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => onSelectForEdit(item)}
+                                    className="p-1 text-amber-500 hover:text-amber-400 hover:bg-amber-950/30 rounded-lg transition"
+                                    title={`Lihat Formulir ${item.nomor} milik ${item.dimintaOleh || 'akun lain'} (Hanya Baca)`}
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </button>
+                                )}
+
+                                {onDuplicate && (
+                                  <button
+                                    type="button"
+                                    onClick={() => onDuplicate(item)}
+                                    className="p-1 text-zinc-400 hover:text-blue-500 rounded-lg"
+                                    title={isOwner ? 'Duplikat FPP' : 'Salin ke Akun Saya'}
+                                    aria-label={`Duplikat ${item.nomor}`}
+                                  >
+                                    <Copy className="w-4 h-4" />
+                                  </button>
+                                )}
+
+                                {isOwner && (
+                                  <button
+                                    onClick={() => handleDelete(item.id, item.nomor)}
+                                    disabled={!canDelete || deletingId === item.id}
+                                    className="p-1 text-zinc-400 hover:text-red-400 hover:bg-red-950/30 rounded-lg transition disabled:opacity-50"
+                                    title="Hapus Formulir"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </>
+                            );
+                          })()}
                         </div>
                       </td>
                     </tr>

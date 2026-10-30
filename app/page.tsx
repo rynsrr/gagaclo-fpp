@@ -44,6 +44,22 @@ import {
 
 type ActiveTab = 'FORM';
 
+function checkIsOwner(purchase?: PurchaseRequisition | null, user?: string | null): boolean {
+  if (!user || !purchase) return false;
+  const cleanUser = user.trim().toLowerCase();
+
+  const peminta = (purchase.dimintaOleh || '').trim().toLowerCase();
+  if (peminta && peminta === cleanUser) return true;
+
+  const nomor = (purchase.nomor || '').trim().toUpperCase();
+  if (nomor && nomor.startsWith(cleanUser.toUpperCase() + '-')) return true;
+
+  const isNew = !purchase.id || purchase.id.startsWith('fpp-');
+  if (isNew && (!peminta || peminta === cleanUser)) return true;
+
+  return false;
+}
+
 function formatUserName(name?: string | null): string {
   if (!name) return 'Royan';
   return name.trim().charAt(0).toUpperCase() + name.trim().slice(1).toLowerCase();
@@ -333,6 +349,10 @@ export default function MainPage() {
       setIsPasswordModalOpen(true);
       return;
     }
+    if (!checkIsOwner(currentPurchase, currentUser)) {
+      alert(`Anda hanya dapat mengedit dan menyimpan FPP milik akun Anda (${formatUserName(currentUser)}). Dokumen ${currentPurchase.nomor} milik ${currentPurchase.dimintaOleh || 'akun lain'} hanya bisa dilihat.`);
+      return;
+    }
     if (isSaving) return;
     const snapshot = structuredClone(currentPurchase);
     setIsSaving(true);
@@ -376,6 +396,11 @@ export default function MainPage() {
   const handleDeletePurchase = async (id: string, nomor: string) => {
     if (!currentUser) {
       setIsPasswordModalOpen(true);
+      return;
+    }
+    const target = purchases.find((p) => p.id === id);
+    if (target && !checkIsOwner(target, currentUser)) {
+      alert(`Anda tidak dapat menghapus FPP milik akun lain (${target.dimintaOleh || target.nomor}).`);
       return;
     }
     if (confirm(`Apakah Anda yakin ingin menghapus formulir ${nomor}?`)) {
@@ -559,11 +584,11 @@ export default function MainPage() {
         {activeTab === 'FORM' && (
           <div className="w-full grid grid-cols-1 xl:grid-cols-[minmax(0,210mm)_minmax(0,1fr)] gap-6 items-start print:block">
             <div className="w-full max-w-[210mm] mx-auto space-y-3">
-              {!currentUser && (
+              {!currentUser ? (
                 <div className="no-print flex items-center justify-between p-2.5 rounded-xl border border-amber-200 dark:border-amber-900/40 bg-amber-50/80 dark:bg-amber-950/20 text-xs text-amber-800 dark:text-amber-300 shadow-sm">
                   <div className="flex items-center gap-2">
                     <Lock className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span>Dokumen dalam <strong>Mode Lihat</strong>. Masuk dengan akun editor (royan, ryan, ami, hanami, cynara) untuk mengedit.</span>
+                    <span>Dokumen dalam <strong>Mode Lihat</strong>. Masuk dengan akun editor untuk mengedit.</span>
                   </div>
                   <button
                     type="button"
@@ -573,7 +598,24 @@ export default function MainPage() {
                     Masuk Edit
                   </button>
                 </div>
-              )}
+              ) : !checkIsOwner(currentPurchase, currentUser) ? (
+                <div className="no-print flex items-center justify-between p-2.5 rounded-xl border border-amber-200 dark:border-amber-900/40 bg-amber-50/90 dark:bg-amber-950/30 text-xs text-amber-800 dark:text-amber-300 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>
+                      Dokumen <strong>{currentPurchase.nomor}</strong> dibuat oleh <strong>{currentPurchase.dimintaOleh || 'Akun Lain'}</strong>. Anda masuk sebagai <strong>{formatUserName(currentUser)}</strong> (Hanya bisa melihat, tidak bisa mengedit FPP akun lain).
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDuplicatePurchase(currentPurchase)}
+                    className="px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs transition active:scale-95 shrink-0"
+                    title="Buat salinan formulir ini atas nama Anda"
+                  >
+                    Salin ke Akun Saya
+                  </button>
+                </div>
+              ) : null}
               <PurchaseDocument
                 key={currentPurchase.id || 'current-fpp'}
                 data={currentPurchase}
@@ -581,7 +623,7 @@ export default function MainPage() {
                 onSave={handleSavePurchase}
                 onGenerateNomor={handleGenerateNomor}
                 saveNotice={saveNotice}
-                isEditable={Boolean(currentUser) && !isLoading}
+                isEditable={Boolean(currentUser) && checkIsOwner(currentPurchase, currentUser) && !isLoading}
                 currentUser={currentUser}
               />
             </div>
@@ -650,6 +692,7 @@ export default function MainPage() {
                 onDuplicate={handleDuplicatePurchase}
                 canEdit={Boolean(currentUser)}
                 canDelete={Boolean(currentUser)}
+                currentUser={currentUser}
                 onRefresh={() => loadData()}
               />
             </div>
