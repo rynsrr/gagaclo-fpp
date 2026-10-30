@@ -524,7 +524,7 @@ export default function PurchaseDocument({
                       value={nomor}
                       onChange={(e) => updateField('nomor', e.target.value)}
                       aria-label="Nomor FPP"
-                      placeholder="ROYAN-0001"
+                      placeholder={currentUser ? `${currentUser.toUpperCase()}-0001` : 'ROYAN-0001'}
                       className="font-mono font-medium bg-transparent hover:bg-blue-50/50 focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 focus:outline-none px-1 py-0 w-28 text-[10.5px] border-b border-dashed border-gray-300 hover:border-black transition print:hidden"
                     />
                     {onGenerateNomor && (
@@ -538,11 +538,11 @@ export default function PurchaseDocument({
                       </button>
                     )}
                     <span className="hidden print:inline font-mono font-normal">
-                      {nomor || 'ROYAN-0001'}
+                      {nomor || (currentUser ? `${currentUser.toUpperCase()}-0001` : 'ROYAN-0001')}
                     </span>
                   </div>
                 ) : (
-                  <span className="font-normal font-mono">{nomor || 'ROYAN-0001'}</span>
+                  <span className="font-normal font-mono">{nomor || (currentUser ? `${currentUser.toUpperCase()}-0001` : 'ROYAN-0001')}</span>
                 )}
               </div>
 

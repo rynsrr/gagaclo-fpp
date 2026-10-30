@@ -120,19 +120,16 @@ export default function MainPage() {
         setCurrentUser(saved);
         const formatted = formatUserName(saved);
         setCurrentPurchase((prev) => {
-          // Jika formulir belum tersimpan di cloud atau nama pemohon kosong/masih default, selaraskan dengan akun yang masuk
-          const isExistingSaved = purchases.some((p) => p.id === prev.id);
-          if (!isExistingSaved && (!prev.dimintaOleh || prev.dimintaOleh.toLowerCase() === 'royan')) {
-            return {
-              ...prev,
-              dimintaOleh: formatted,
-            };
-          }
-          return prev;
+          const nextNomor = generateNextNomor(purchases, formatted);
+          return {
+            ...prev,
+            nomor: nextNomor,
+            dimintaOleh: formatted,
+          };
         });
       }
     } catch {}
-  }, [purchases]);
+  }, []);
 
   const handleLogout = () => {
     try {
@@ -226,16 +223,34 @@ export default function MainPage() {
     const savedPurchases = data || [];
     setPurchases(savedPurchases);
     if (initialize) {
+      let activeUser: string | null = null;
+      if (typeof window !== 'undefined') {
+        try {
+          activeUser = localStorage.getItem('fpp_edit_user') || sessionStorage.getItem('fpp_edit_user');
+        } catch {}
+      }
+      const formatted = activeUser ? formatUserName(activeUser) : 'Royan';
+      const blank = createBlankPurchase(savedPurchases, activeUser);
       const draft = getDraft();
-      const blank = createBlankPurchase(savedPurchases);
-      setCurrentPurchase(draft?.purchase || blank);
-      setSavedFingerprint(
-        fingerprint(
-          draft
-            ? savedPurchases.find((p) => p.id === draft.purchase.id) || blankBaseline(draft.purchase)
-            : blank
-        )
-      );
+
+      if (draft?.purchase) {
+        const draftPurchase = { ...draft.purchase };
+        if (activeUser) {
+          draftPurchase.dimintaOleh = formatted;
+          if (!draftPurchase.nomor || !draftPurchase.nomor.toUpperCase().startsWith(formatted.toUpperCase() + '-')) {
+            draftPurchase.nomor = generateNextNomor(savedPurchases, formatted);
+          }
+        }
+        setCurrentPurchase(draftPurchase);
+        setSavedFingerprint(
+          fingerprint(
+            savedPurchases.find((p) => p.id === draftPurchase.id) || blankBaseline(draftPurchase)
+          )
+        );
+      } else {
+        setCurrentPurchase(blank);
+        setSavedFingerprint(fingerprint(blank));
+      }
       setDrafts(listDrafts());
       setDraftReady(true);
     }
@@ -647,19 +662,14 @@ export default function MainPage() {
         onSuccess={(username) => {
           setCurrentUser(username);
           const formatted = formatUserName(username);
-          // Selaraskan nomor FPP dan nama pemohon ("Diminta") dengan akun yang masuk
-          setCurrentPurchase((prev) => {
-            const isExistingSaved = purchases.some((p) => p.id === prev.id);
-            if (!isExistingSaved) {
-              return {
-                ...prev,
-                nomor: generateNextNomor(purchases, formatted),
-                dimintaOleh: formatted,
-              };
-            }
-            return prev;
-          });
-          setSaveNotice(`Mode edit aktif. Masuk sebagai ${formatted}.`);
+          const nextNomor = generateNextNomor(purchases, formatted);
+          // Otomatis ubah nomor dan peminta ("Diminta") mengikuti user yang masuk
+          setCurrentPurchase((prev) => ({
+            ...prev,
+            nomor: nextNomor,
+            dimintaOleh: formatted,
+          }));
+          setSaveNotice(`Masuk sebagai ${formatted}. Nomor otomatis: ${nextNomor}`);
           setTimeout(() => setSaveNotice(null), 3500);
         }}
       />
