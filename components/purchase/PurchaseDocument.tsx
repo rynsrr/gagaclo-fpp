@@ -101,6 +101,93 @@ export default function PurchaseDocument({
     });
   };
 
+    const parseQtySatuan = (banyaknya?: string, qty?: number, satuan?: string) => {
+    const cleanBanyaknya = String(banyaknya || '').trim();
+    const match = cleanBanyaknya.match(/^(\d+(?:[.,]\d+)?)\s*(.*)$/);
+
+    let q = '';
+    if (qty !== undefined && qty !== null && !Number.isNaN(qty)) {
+      q = String(qty);
+    } else if (match) {
+      q = match[1];
+    }
+
+    let s = '';
+    if (satuan !== undefined && satuan !== null && satuan !== '') {
+      s = satuan;
+    } else if (match) {
+      s = match[2];
+    } else if (cleanBanyaknya && !match) {
+      s = cleanBanyaknya;
+    }
+
+    return { qty: q, satuan: s };
+  };
+
+  const handleQtyChange = (index: number, newQty: string, currentSatuan: string) => {
+    if (!onChange) return;
+    const current = dataRef.current;
+    const updatedItems = [...current.items];
+    const item = { ...updatedItems[index] };
+
+    const cleanQty = String(newQty || '').trim();
+    const cleanSat = String(currentSatuan || '').trim();
+
+    const combined = cleanQty ? (cleanSat ? `${cleanQty} ${cleanSat}` : cleanQty) : cleanSat;
+    const numQty = cleanQty === '' ? undefined : Number(cleanQty.replace(',', '.'));
+
+    item.banyaknya = combined;
+    item.qty = Number.isFinite(numQty) ? numQty : undefined;
+    item.satuan = cleanSat;
+
+    const harga = item.hargaSatuan || 0;
+    item.jumlah = calculateItemAmount(combined, harga);
+
+    updatedItems[index] = item;
+    const newTotal = calculateTotal(updatedItems);
+    onChange({
+      ...current,
+      items: updatedItems,
+      totalTaksiran: newTotal,
+    });
+  };
+
+  const handleSatuanChange = (index: number, currentQty: string, newSatuan: string) => {
+    if (!onChange) return;
+    const current = dataRef.current;
+    const updatedItems = [...current.items];
+    const item = { ...updatedItems[index] };
+
+    const cleanQty = String(currentQty || '').trim();
+    const cleanSat = String(newSatuan || '').trim();
+
+    const combined = cleanQty ? (cleanSat ? `${cleanQty} ${cleanSat}` : cleanQty) : cleanSat;
+    const numQty = cleanQty === '' ? undefined : Number(cleanQty.replace(',', '.'));
+
+    item.banyaknya = combined;
+    item.qty = Number.isFinite(numQty) ? numQty : undefined;
+    item.satuan = cleanSat;
+
+    const harga = item.hargaSatuan || 0;
+    item.jumlah = calculateItemAmount(combined, harga);
+
+    updatedItems[index] = item;
+    const newTotal = calculateTotal(updatedItems);
+    onChange({
+      ...current,
+      items: updatedItems,
+      totalTaksiran: newTotal,
+    });
+  };
+
+  const formatDisplayBanyaknya = (item: PurchaseItem) => {
+    if (item.banyaknya) return item.banyaknya;
+    if (item.qty !== undefined && item.qty !== null) {
+      return item.satuan ? `${item.qty} ${item.satuan}` : String(item.qty);
+    }
+    return item.satuan || '';
+  };
+
   const itemNameInputs = useRef<Array<HTMLInputElement | null>>([]);
   const pendingItemFocus = useRef<number | null>(null);
   const handleNextItemOnEnter = (event: React.KeyboardEvent<HTMLInputElement>, index: number) => {
@@ -485,12 +572,12 @@ export default function PurchaseDocument({
           <div className="w-full border-x border-b border-black">
             <table className="w-full table-fixed border-collapse text-[10.5px]">
               <colgroup>
-                <col style={{ width: '5%' }} />
-                <col style={{ width: '36%' }} />
-                <col style={{ width: '9%' }} />
-                <col style={{ width: '10%' }} />
-                <col style={{ width: '10%' }} />
-                <col style={{ width: '30%' }} />
+                <col style={{ width: '4%' }} />
+                <col style={{ width: '33%' }} />
+                <col style={{ width: '15%' }} />
+                <col style={{ width: '11%' }} />
+                <col style={{ width: '11%' }} />
+                <col style={{ width: '26%' }} />
               </colgroup>
               <thead>
                 <tr className="text-center font-bold text-[10px] leading-tight">
@@ -541,25 +628,52 @@ export default function PurchaseDocument({
                       )}
                     </td>
 
-                    {/* Banyaknya */}
+                    {/* Banyaknya (Qty & Satuan dipisah, pas di tabel, tanpa huruf terpotong) */}
                     <td className="border-r border-black px-1 py-0.5 text-center font-normal">
                       {isEditable ? (
                         <>
-                          <input
-                            type="text"
-                            value={item.banyaknya}
-                            onChange={(e) => handleItemChange(index, 'banyaknya', e.target.value)}
-                            onKeyDown={(event) => handleNextItemOnEnter(event, index)}
-                            placeholder="e.g. 10 Pcs"
-                            className="w-full text-center bg-transparent hover:bg-blue-50/40 focus:bg-blue-50/80 focus:ring-1 focus:ring-blue-400 focus:outline-none px-1 py-0.5 text-[10.5px] rounded transition print:hidden placeholder:text-gray-400 placeholder:italic"
-                          />
-                          <span className="hidden print:inline-block whitespace-nowrap">
-                            {item.banyaknya || (item.qty ? `${item.qty} ${item.satuan || ''}` : '')}
+                          <div className="flex items-center justify-center w-full h-5 gap-0.5 print:hidden">
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              value={parseQtySatuan(item.banyaknya, item.qty, item.satuan).qty}
+                              onChange={(e) =>
+                                handleQtyChange(
+                                  index,
+                                  e.target.value,
+                                  parseQtySatuan(item.banyaknya, item.qty, item.satuan).satuan
+                                )
+                              }
+                              onKeyDown={(event) => handleNextItemOnEnter(event, index)}
+                              placeholder="Qty"
+                              className="w-[42%] min-w-0 text-right bg-transparent hover:bg-blue-50/50 focus:bg-blue-50/90 focus:ring-1 focus:ring-blue-400 focus:outline-none px-0.5 py-0 text-[10.5px] rounded transition font-medium text-slate-800 dark:text-zinc-200 placeholder:text-gray-400"
+                              title="Jumlah / Kuantitas angka"
+                            />
+                            <span className="text-gray-400 text-[10px] select-none shrink-0 font-light">/</span>
+                            <input
+                              type="text"
+                              list="fpp-unit-options"
+                              value={parseQtySatuan(item.banyaknya, item.qty, item.satuan).satuan}
+                              onChange={(e) =>
+                                handleSatuanChange(
+                                  index,
+                                  parseQtySatuan(item.banyaknya, item.qty, item.satuan).qty,
+                                  e.target.value
+                                )
+                              }
+                              onKeyDown={(event) => handleNextItemOnEnter(event, index)}
+                              placeholder="Satuan"
+                              className="w-[55%] min-w-0 text-left bg-transparent hover:bg-blue-50/50 focus:bg-blue-50/90 focus:ring-1 focus:ring-blue-400 focus:outline-none px-0.5 py-0 text-[10px] rounded transition font-normal text-slate-700 dark:text-zinc-300 placeholder:text-gray-400 uppercase"
+                              title="Satuan (Pcs, Meter, Roll, Box, dsb)"
+                            />
+                          </div>
+                          <span className="hidden print:inline-block whitespace-nowrap text-[10px]">
+                            {formatDisplayBanyaknya(item)}
                           </span>
                         </>
                       ) : (
-                        <span className="whitespace-nowrap">
-                          {item.banyaknya || (item.qty ? `${item.qty} ${item.satuan || ''}` : '')}
+                        <span className="whitespace-nowrap text-[10px]">
+                          {formatDisplayBanyaknya(item)}
                         </span>
                       )}
                     </td>
