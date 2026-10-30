@@ -11,6 +11,7 @@ import {
   deletePurchase,
 } from '@/lib/purchaseService';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { deleteAttachment } from '@/lib/attachmentUpload';
 
 // Components
 import PurchaseDocument from '@/components/purchase/PurchaseDocument';
@@ -306,6 +307,12 @@ export default function MainPage() {
 
   const handleDeletePurchase = async (id: string, nomor: string) => {
     if (confirm(`Apakah Anda yakin ingin menghapus formulir ${nomor}?`)) {
+      const toDelete = purchases.find((p) => p.id === id);
+      if (toDelete && Array.isArray(toDelete.photos)) {
+        for (const photo of toDelete.photos) {
+          if (photo?.url) void deleteAttachment(photo.url);
+        }
+      }
       const res = await deletePurchase(id);
       if (!res.success) {
         alert('Penghapusan gagal. Data belum terhapus dari database.');

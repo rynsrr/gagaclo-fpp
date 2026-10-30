@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { PurchasePhoto } from '@/types/purchase';
 import { compressImage } from '@/lib/imageUtils';
-import { uploadAttachment } from '@/lib/attachmentUpload';
+import { uploadAttachment, deleteAttachment } from '@/lib/attachmentUpload';
 import { ArrowLeft, ArrowRight, UploadCloud, X, FileText, Eye } from 'lucide-react';
 
 export default function AttachmentPanel({ photos, isEditable, onChange }: { photos: PurchasePhoto[]; isEditable: boolean; onChange: (photos: PurchasePhoto[]) => void }) {
@@ -59,7 +59,7 @@ export default function AttachmentPanel({ photos, isEditable, onChange }: { phot
       {isEditable ? <input aria-label={`Keterangan lampiran ${i+1}`} value={photo.caption || ''} onChange={e=>onChange(photos.map(p=>p.id===photo.id?{...p,caption:e.target.value}:p))} className="w-full text-[11px] mt-2 border rounded p-1"/> : <p className="text-[11px] break-words mt-2">{photo.caption || photo.name}</p>}
       <div className="flex items-center justify-between mt-2"><span className="text-[10px] text-slate-500">{photo.type==='application/pdf'?'PDF':'Foto'} {i+1}</span><div className="flex gap-1">
         <button type="button" onClick={()=>setPreview(photo)} aria-label={`Buka lampiran ${i+1}`}><Eye size={14}/></button>
-        {isEditable && <><button type="button" disabled={i===0 || uploading} onClick={()=>move(i,-1)} aria-label={`Geser lampiran ${i+1} ke kiri`} className="disabled:opacity-20"><ArrowLeft size={14}/></button><button type="button" disabled={i===photos.length-1 || uploading} onClick={()=>move(i,1)} aria-label={`Geser lampiran ${i+1} ke kanan`} className="disabled:opacity-20"><ArrowRight size={14}/></button><button type="button" disabled={uploading} onClick={()=>onChange(photos.filter(p=>p.id!==photo.id))} aria-label={`Lepas lampiran ${i+1}`} className="text-red-700"><X size={14}/></button></>}
+        {isEditable && <><button type="button" disabled={i===0 || uploading} onClick={()=>move(i,-1)} aria-label={`Geser lampiran ${i+1} ke kiri`} className="disabled:opacity-20"><ArrowLeft size={14}/></button><button type="button" disabled={i===photos.length-1 || uploading} onClick={()=>move(i,1)} aria-label={`Geser lampiran ${i+1} ke kanan`} className="disabled:opacity-20"><ArrowRight size={14}/></button><button type="button" disabled={uploading} onClick={()=>{void deleteAttachment(photo.url); onChange(photos.filter(p=>p.id!==photo.id));}} aria-label={`Lepas dan hapus lampiran ${i+1}`} className="text-red-700 hover:text-red-900 transition"><X size={14}/></button></>}
       </div></div>
     </div>)}</div>
     {preview && <div role="dialog" aria-modal="true" aria-label="Pratinjau lampiran" className="fixed inset-0 z-50 bg-black/80 flex flex-col p-4" onKeyDown={e=>{if(e.key==='Escape')setPreview(null);}}>

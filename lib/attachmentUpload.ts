@@ -28,3 +28,20 @@ export async function uploadAttachment(input: string | Blob, onProgress?: (progr
     xhr.send(form);
   });
 }
+
+export async function deleteAttachment(url: string): Promise<boolean> {
+  try {
+    const match = url.match(/\/api\/attachments\/([a-f0-9-]{36}\.(?:jpg|pdf))/i);
+    if (!match) return false;
+    const key = match[1];
+    const res = await fetch(`/api/attachments/${key}`, { method: 'DELETE' });
+    if (res.ok) {
+      window.dispatchEvent(new Event('fpp-attachments-updated'));
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.warn('Gagal menghapus lampiran:', err);
+    return false;
+  }
+}
