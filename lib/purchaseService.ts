@@ -148,16 +148,19 @@ export function saveLocalPurchases(list: PurchaseRequisition[]): boolean {
   }
 }
 
-// Generate new sequential nomor FPP: ROYAN-0001, ROYAN-0002, dst.
-export function generateNextNomor(list: PurchaseRequisition[]): string {
-  const prefix = 'ROYAN-';
+// Generate new sequential nomor FPP per peminta: ROYAN-0001, RYAN-0001, AMI-0001, dst.
+export function generateNextNomor(list: PurchaseRequisition[], peminta?: string): string {
+  const cleanPrefix = (peminta || 'ROYAN').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const prefix = cleanPrefix ? `${cleanPrefix}-` : 'ROYAN-';
+  const prefixEscaped = cleanPrefix ? cleanPrefix.replace(/[^A-Z0-9]/g, '') : 'ROYAN';
+  const regex = new RegExp('^' + prefixEscaped + '[-_](\\d+)', 'i');
+
   let maxNum = 0;
 
   if (Array.isArray(list)) {
     for (const item of list) {
-      if (item.nomor) {
-        const trimmed = item.nomor.trim();
-        const match = trimmed.match(/^ROYAN-(\d+)/i);
+      if (item?.nomor) {
+        const match = item.nomor.trim().match(regex);
         if (match) {
           const parsed = parseInt(match[1], 10);
           if (!isNaN(parsed) && parsed > maxNum) {

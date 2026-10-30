@@ -305,7 +305,8 @@ export default function MainPage() {
   };
 
   const handleGenerateNomor = () => {
-    const nextNomor = generateNextNomor(purchases);
+    const peminta = currentPurchase.dimintaOleh || currentUser || 'Royan';
+    const nextNomor = generateNextNomor(purchases, peminta);
     setCurrentPurchase((prev) => ({
       ...prev,
       nomor: nextNomor,
@@ -380,8 +381,12 @@ export default function MainPage() {
 
   const handleDuplicatePurchase = (item: PurchaseRequisition) => {
     if (!confirmDiscard()) return;
-    openPurchase(duplicatePurchase(item, generateNextNomor(purchases), todayInJakarta()), false);
-    setSaveNotice(`Salinan ${item.nomor} siap diedit.`);
+    const peminta = currentUser ? formatUserName(currentUser) : (item.dimintaOleh || 'Royan');
+    const nextNomor = generateNextNomor(purchases, peminta);
+    const dup = duplicatePurchase(item, nextNomor, todayInJakarta());
+    dup.dimintaOleh = peminta;
+    openPurchase(dup, false);
+    setSaveNotice(`Salinan ${dup.nomor} siap diedit.`);
     setTimeout(() => setSaveNotice(null), 3000);
   };
 
@@ -642,12 +647,13 @@ export default function MainPage() {
         onSuccess={(username) => {
           setCurrentUser(username);
           const formatted = formatUserName(username);
-          // Selaraskan bagian "Diminta" (tanda tangan & nama) dengan akun yang masuk
+          // Selaraskan nomor FPP dan nama pemohon ("Diminta") dengan akun yang masuk
           setCurrentPurchase((prev) => {
             const isExistingSaved = purchases.some((p) => p.id === prev.id);
             if (!isExistingSaved) {
               return {
                 ...prev,
+                nomor: generateNextNomor(purchases, formatted),
                 dimintaOleh: formatted,
               };
             }
