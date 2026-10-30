@@ -1,6 +1,7 @@
 'use client';
 
 import { uploadAttachment } from '@/lib/attachmentUpload';
+import FittedSignatureName from './FittedSignatureName';
 
 import React, { useRef, useState, useEffect } from 'react';
 import { PurchaseRequisition, PurchaseItem, PurchaseJenis, PurchasePhoto } from '@/types/purchase';
@@ -797,14 +798,7 @@ export default function PurchaseDocument({
                 </div>
                 <div className="flex-1 min-h-[44px] flex flex-col items-center justify-center p-0.5 relative select-none overflow-hidden">
                   {/* Gunakan sumber nama yang sama untuk layar dan cetak. */}
-                  <span
-                    className="font-signature text-[21px] font-bold text-black tracking-wide leading-none transform -rotate-3 select-none w-full text-center truncate"
-                    style={{
-                      fontFamily: "var(--font-great-vibes), 'Great Vibes', var(--font-dancing-script), 'Dancing Script', 'Brush Script MT', cursive",
-                    }}
-                  >
-                    {dimintaOleh || ''}
-                  </span>
+                  <FittedSignatureName name={dimintaOleh || ''} />
                 </div>
                 <div className="border-t border-black h-[22px] flex items-center justify-center text-[9px] font-medium text-black px-0.5">
                   {isEditable ? (
