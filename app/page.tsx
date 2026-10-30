@@ -543,7 +543,7 @@ export default function MainPage() {
                 <div className="no-print flex items-center justify-between p-2.5 rounded-xl border border-amber-200 dark:border-amber-900/40 bg-amber-50/80 dark:bg-amber-950/20 text-xs text-amber-800 dark:text-amber-300 shadow-sm">
                   <div className="flex items-center gap-2">
                     <Lock className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span>Dokumen dalam <strong>Mode Lihat</strong>. Masuk dengan akun editor (royan, ryan, amin, hanami, cynara) untuk mengedit.</span>
+                    <span>Dokumen dalam <strong>Mode Lihat</strong>. Masuk dengan akun editor (royan, ryan, ami, hanami, cynara) untuk mengedit.</span>
                   </div>
                   <button
                     type="button"

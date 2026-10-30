@@ -9,7 +9,7 @@ interface PasswordModalProps {
   onSuccess: (username: string) => void;
 }
 
-export const ALLOWED_USERS = ['royan', 'ryan', 'amin', 'hanami', 'cynara'];
+export const ALLOWED_USERS = ['royan', 'ryan', 'ami', 'hanami', 'cynara'];
 
 export default function PasswordModal({
   isOpen,
@@ -49,7 +49,7 @@ export default function PasswordModal({
     }
 
     if (!ALLOWED_USERS.includes(cleanUser)) {
-      setError('User tidak terdaftar. Pilihan: royan, ryan, amin, hanami, cynara.');
+      setError('User tidak terdaftar. Pilihan: royan, ryan, ami, hanami, cynara.');
       usernameInputRef.current?.focus();
       return;
     }
@@ -154,7 +154,7 @@ export default function PasswordModal({
                   setUsername(e.target.value);
                   if (error) setError(null);
                 }}
-                placeholder="royan, ryan, amin, hanami, cynara"
+                placeholder="royan, ryan, ami, hanami, cynara"
                 required
                 className="w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/60 px-3.5 py-2.5 text-sm text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
               />

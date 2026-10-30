@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 const EDIT_ACCOUNTS: Record<string, string> = {
   royan: 'royan',
   ryan: 'ryan',
+  ami: 'ami',
   amin: 'amin',
   hanami: 'hanami',
   cynara: 'cynara',
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: 'Username atau password salah. Pilihan: royan, ryan, amin, hanami, cynara' },
+      { error: 'Username atau password salah. Pilihan: royan, ryan, ami, hanami, cynara' },
       { status: 401 }
     );
   } catch {
