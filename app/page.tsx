@@ -36,6 +36,7 @@ import {
   Save,
   Sun,
   Moon,
+  Trash2,
 } from 'lucide-react';
 
 type ActiveTab = 'FORM';
@@ -317,6 +318,34 @@ export default function MainPage() {
     setTimeout(() => setSaveNotice(null), 3000);
   };
 
+    const handleDeleteDraft = (draftId: string, draftNomor: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (confirm(`Apakah Anda yakin ingin menghapus draft ${draftNomor || 'ini'}?`)) {
+      removeDraft(draftId);
+      setDrafts(listDrafts());
+      if (currentPurchase.id === draftId) {
+        openPurchase(createBlankPurchase(purchases), false);
+      }
+    }
+  };
+
+  const handleClearAllDrafts = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (confirm(`Apakah Anda yakin ingin menghapus SEMUA (${drafts.length}) draft dari perangkat ini?`)) {
+      drafts.forEach((d) => removeDraft(d.purchase.id));
+      setDrafts(listDrafts());
+      if (drafts.some((d) => d.purchase.id === currentPurchase.id)) {
+        openPurchase(createBlankPurchase(purchases), false);
+      }
+    }
+  };
+
   const handleSelectForPreview = (item: PurchaseRequisition) => {
     if (!confirmDiscard()) return;
     openPurchase(item);
@@ -429,32 +458,52 @@ export default function MainPage() {
 
             <div className="no-print min-w-0 space-y-4">
               {!!drafts.length && (
-                <details className="rounded-xl border border-slate-200 dark:border-zinc-800 p-3 text-xs bg-white dark:bg-zinc-900">
-                  <summary className="cursor-pointer font-semibold">
-                    Draft perangkat ini ({drafts.length})
+                <details className="rounded-xl border border-slate-200 dark:border-zinc-800 p-3 text-xs bg-white dark:bg-zinc-900" open>
+                  <summary className="cursor-pointer font-semibold flex items-center justify-between select-none">
+                    <span>Draft perangkat ini ({drafts.length})</span>
+                    <button
+                      type="button"
+                      onClick={handleClearAllDrafts}
+                      className="text-[11px] font-normal text-red-500 hover:text-red-700 hover:underline px-1 py-0.5"
+                      title="Bersihkan semua draft lokal"
+                    >
+                      Hapus Semua
+                    </button>
                   </summary>
                   <div className="space-y-2 mt-3">
                     {drafts.map((draft) => (
-                      <button
+                      <div
                         key={draft.purchase.id}
-                        type="button"
-                        className="block w-full text-left rounded-lg border border-slate-200 dark:border-zinc-800 p-2 hover:bg-slate-50 dark:hover:bg-zinc-800/60 transition"
-                        onClick={() => {
-                          if (!confirmDiscard()) return;
-                          setCurrentPurchase(draft.purchase);
-                          setSavedFingerprint(
-                            fingerprint(
-                              purchases.find((p) => p.id === draft.purchase.id) || blankBaseline(draft.purchase)
-                            )
-                          );
-                        }}
+                        className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 dark:border-zinc-800 p-2 hover:bg-slate-50 dark:hover:bg-zinc-800/60 transition group"
                       >
-                        <span className="font-medium">{draft.purchase.nomor}</span> •{' '}
-                        {draft.purchase.items[0]?.namaBarang || 'Belum diisi'}
-                        <span className="block text-slate-500 text-[10px] mt-0.5">
-                          {new Date(draft.savedAt).toLocaleString('id-ID')}
-                        </span>
-                      </button>
+                        <button
+                          type="button"
+                          className="flex-1 text-left min-w-0"
+                          onClick={() => {
+                            if (!confirmDiscard()) return;
+                            setCurrentPurchase(draft.purchase);
+                            setSavedFingerprint(
+                              fingerprint(
+                                purchases.find((p) => p.id === draft.purchase.id) || blankBaseline(draft.purchase)
+                              )
+                            );
+                          }}
+                        >
+                          <span className="font-medium text-slate-800 dark:text-zinc-200">{draft.purchase.nomor}</span> •{' '}
+                          <span className="text-slate-600 dark:text-zinc-400">{draft.purchase.items[0]?.namaBarang || 'Belum diisi'}</span>
+                          <span className="block text-slate-500 text-[10px] mt-0.5">
+                            {new Date(draft.savedAt).toLocaleString('id-ID')}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteDraft(draft.purchase.id, draft.purchase.nomor, e)}
+                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition shrink-0"
+                          title="Hapus draft ini dari perangkat"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     ))}
                   </div>
                 </details>
