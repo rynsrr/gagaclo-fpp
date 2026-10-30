@@ -83,7 +83,7 @@ export default function PurchaseFormEditor({
       tanggal: new Date().toISOString().split('T')[0],
       tanggalDiterima: '',
       dimintaTanggal: '',
-      dimintaOleh: 'ROYAN - RDI',
+      dimintaOleh: 'Royan',
     };
   });
 
@@ -220,7 +220,7 @@ export default function PurchaseFormEditor({
         tanggal: new Date().toISOString().split('T')[0],
         tanggalDiterima: '',
         dimintaTanggal: '',
-        dimintaOleh: 'ROYAN - RDI',
+        dimintaOleh: 'Royan',
       });
     }
   };
@@ -673,7 +673,7 @@ export default function PurchaseFormEditor({
                 type="text"
                 value={formData.dimintaOleh || ''}
                 onChange={(e) => setFormData({ ...formData, dimintaOleh: e.target.value })}
-                placeholder="ROYAN - RDI"
+                placeholder="Royan"
                 className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500 font-medium"
               />
             </div>

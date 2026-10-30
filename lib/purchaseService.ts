@@ -51,7 +51,7 @@ export const SAMPLE_PURCHASE_REQUISITION: PurchaseRequisition = {
   tanggalDiterima: '',
   catatan: 'Prioritas pengiriman kain katun maksimal tanggal 2 November 2026.',
   photos: [],
-  dimintaOleh: 'ROYAN - RDI',
+  dimintaOleh: 'Royan',
   dimintaTanggal: '',
   diketahuiOleh: '',
   diketahuiTanggal: '',

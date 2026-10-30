@@ -48,7 +48,7 @@ export default function PurchaseDocument({
     tanggalDiterima = '',
     catatan = '',
     photos = [],
-    dimintaOleh = 'ROYAN',
+    dimintaOleh = 'Royan',
     diketahuiOleh = '',
     disetujuiOleh = '',
     diterimaOleh = '',
@@ -807,7 +807,7 @@ export default function PurchaseDocument({
                         type="text"
                         value={dimintaOleh}
                         onChange={(e) => updateField('dimintaOleh', e.target.value)}
-                        placeholder="ROYAN"
+                        placeholder="Royan"
                         className="w-full text-center bg-transparent hover:bg-blue-50/40 focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 focus:outline-none text-[9px] font-medium print:hidden rounded"
                       />
                       <span className="hidden print:inline truncate">{dimintaOleh || ''}</span>
