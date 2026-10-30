@@ -629,6 +629,17 @@ export default function PurchaseDocument({
                           <input
                             type="text"
                             value={item.supplier}
+                            onKeyDown={(event) => {
+                              if (event.key !== 'Enter' || event.nativeEvent.isComposing || event.repeat || !onChange) return;
+                              event.preventDefault();
+                              const nextInput = itemNameInputs.current[index + 1];
+                              if (nextInput) {
+                                nextInput.focus();
+                              } else {
+                                pendingItemFocus.current = dataRef.current.items.length;
+                                handleAddItemRow();
+                              }
+                            }}
                             onChange={(e) => handleItemChange(index, 'supplier', e.target.value)}
                             placeholder="Nama supplier..."
                             className="w-full bg-transparent hover:bg-blue-50/40 focus:bg-blue-50/80 focus:ring-1 focus:ring-blue-400 focus:outline-none px-1 py-0.5 text-[10.5px] rounded transition print:hidden placeholder:text-gray-400 placeholder:italic"
