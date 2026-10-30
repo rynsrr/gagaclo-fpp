@@ -29,6 +29,7 @@ interface PurchaseDocumentProps {
   saveNotice?: string | null;
   hidePrintControls?: boolean;
   isEditable?: boolean;
+  currentUser?: string | null;
 }
 
 export default function PurchaseDocument({
@@ -39,6 +40,7 @@ export default function PurchaseDocument({
   saveNotice = null,
   hidePrintControls = false,
   isEditable = true,
+  currentUser = null,
 }: PurchaseDocumentProps) {
   const {
     nomor = '',
@@ -900,14 +902,14 @@ export default function PurchaseDocument({
                 </div>
               </div>
 
-              {/* 2. Diminta: nama bergaya tanda tangan mengikuti nama peminta. */}
+              {/* 2. Diminta: nama bergaya tanda tangan mengikuti nama peminta sesuai akun */}
               <div className="border-r border-black flex flex-col justify-between">
                 <div className="border-b border-black h-[22px] flex items-center justify-center font-semibold text-[9.5px]">
                   Diminta
                 </div>
                 <div className="flex-1 min-h-[44px] flex flex-col items-center justify-center p-0.5 relative select-none overflow-hidden">
-                  {/* Gunakan sumber nama yang sama untuk layar dan cetak. */}
-                  <FittedSignatureName name={dimintaOleh || ''} />
+                  {/* Gunakan sumber nama yang sama untuk layar dan cetak sesuai akun yang masuk */}
+                  <FittedSignatureName name={dimintaOleh || (currentUser ? currentUser.charAt(0).toUpperCase() + currentUser.slice(1).toLowerCase() : 'Royan')} />
                 </div>
                 <div className="border-t border-black h-[22px] flex items-center justify-center text-[9px] font-medium text-black px-0.5">
                   {isEditable ? (
@@ -917,13 +919,13 @@ export default function PurchaseDocument({
                         aria-label="Nama pemohon"
                         value={dimintaOleh}
                         onChange={(e) => updateField('dimintaOleh', e.target.value)}
-                        placeholder="Royan"
+                        placeholder={currentUser ? currentUser.charAt(0).toUpperCase() + currentUser.slice(1).toLowerCase() : 'Royan'}
                         className="w-full text-center bg-transparent hover:bg-blue-50/40 focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 focus:outline-none text-[9px] font-medium print:hidden rounded"
                       />
-                      <span className="hidden print:inline truncate">{dimintaOleh || ''}</span>
+                      <span className="hidden print:inline truncate">{dimintaOleh || (currentUser ? currentUser.charAt(0).toUpperCase() + currentUser.slice(1).toLowerCase() : 'Royan')}</span>
                     </>
                   ) : (
-                    <span className="truncate">{dimintaOleh || ''}</span>
+                    <span className="truncate">{dimintaOleh || (currentUser ? currentUser.charAt(0).toUpperCase() + currentUser.slice(1).toLowerCase() : 'Royan')}</span>
                   )}
                 </div>
               </div>

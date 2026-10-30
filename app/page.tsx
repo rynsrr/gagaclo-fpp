@@ -44,8 +44,14 @@ import {
 
 type ActiveTab = 'FORM';
 
-function createBlankPurchase(purchases: PurchaseRequisition[]): PurchaseRequisition {
+function formatUserName(name?: string | null): string {
+  if (!name) return 'Royan';
+  return name.trim().charAt(0).toUpperCase() + name.trim().slice(1).toLowerCase();
+}
+
+function createBlankPurchase(purchases: PurchaseRequisition[], user?: string | null): PurchaseRequisition {
   const now = new Date();
+  const userName = formatUserName(user);
   return {
     ...DEFAULT_PURCHASE_REQUISITION,
     id: 'fpp-' + crypto.randomUUID(),
@@ -64,6 +70,7 @@ function createBlankPurchase(purchases: PurchaseRequisition[]): PurchaseRequisit
       },
     ],
     photos: [],
+    dimintaOleh: userName,
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
   };
@@ -88,7 +95,15 @@ export default function MainPage() {
     }
   }, [purchases]);
 
-  const [currentPurchase, setCurrentPurchase] = useState<PurchaseRequisition>(() => createBlankPurchase([]));
+  const [currentPurchase, setCurrentPurchase] = useState<PurchaseRequisition>(() => {
+    let savedUser: string | null = null;
+    if (typeof window !== 'undefined') {
+      try {
+        savedUser = localStorage.getItem('fpp_edit_user') || sessionStorage.getItem('fpp_edit_user');
+      } catch {}
+    }
+    return createBlankPurchase([], savedUser);
+  });
   const [isCloudReady, setIsCloudReady] = useState(false);
   const [isTableReady, setIsTableReady] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -101,9 +116,23 @@ export default function MainPage() {
   useEffect(() => {
     try {
       const saved = localStorage.getItem('fpp_edit_user') || sessionStorage.getItem('fpp_edit_user');
-      if (saved) setCurrentUser(saved);
+      if (saved) {
+        setCurrentUser(saved);
+        const formatted = formatUserName(saved);
+        setCurrentPurchase((prev) => {
+          // Jika formulir belum tersimpan di cloud atau nama pemohon kosong/masih default, selaraskan dengan akun yang masuk
+          const isExistingSaved = purchases.some((p) => p.id === prev.id);
+          if (!isExistingSaved && (!prev.dimintaOleh || prev.dimintaOleh.toLowerCase() === 'royan')) {
+            return {
+              ...prev,
+              dimintaOleh: formatted,
+            };
+          }
+          return prev;
+        });
+      }
     } catch {}
-  }, []);
+  }, [purchases]);
 
   const handleLogout = () => {
     try {
@@ -269,7 +298,7 @@ export default function MainPage() {
       return;
     }
     if (!confirmDiscard()) return;
-    openPurchase(createBlankPurchase(purchases), false);
+    openPurchase(createBlankPurchase(purchases, currentUser), false);
     setActiveTab('FORM');
     setSaveNotice('Formulir baru siap diisi.');
     setTimeout(() => setSaveNotice(null), 3000);
@@ -533,6 +562,7 @@ export default function MainPage() {
                 onGenerateNomor={handleGenerateNomor}
                 saveNotice={saveNotice}
                 isEditable={Boolean(currentUser) && !isLoading}
+                currentUser={currentUser}
               />
             </div>
 
@@ -611,7 +641,19 @@ export default function MainPage() {
         onClose={() => setIsPasswordModalOpen(false)}
         onSuccess={(username) => {
           setCurrentUser(username);
-          setSaveNotice(`Mode edit aktif. Masuk sebagai ${username.charAt(0).toUpperCase() + username.slice(1)}.`);
+          const formatted = formatUserName(username);
+          // Selaraskan bagian "Diminta" (tanda tangan & nama) dengan akun yang masuk
+          setCurrentPurchase((prev) => {
+            const isExistingSaved = purchases.some((p) => p.id === prev.id);
+            if (!isExistingSaved) {
+              return {
+                ...prev,
+                dimintaOleh: formatted,
+              };
+            }
+            return prev;
+          });
+          setSaveNotice(`Mode edit aktif. Masuk sebagai ${formatted}.`);
           setTimeout(() => setSaveNotice(null), 3500);
         }}
       />
