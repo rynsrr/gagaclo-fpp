@@ -3,7 +3,6 @@
 import { uploadAttachment } from '@/lib/attachmentUpload';
 import FittedSignatureName from './FittedSignatureName';
 import AttachmentPanel from './AttachmentPanel';
-import { splitQuantity, updateQuantity, ValidationErrors } from '@/lib/purchaseEditing';
 
 import React, { useRef, useState, useEffect } from 'react';
 import { PurchaseRequisition, PurchaseItem, PurchaseJenis, PurchasePhoto } from '@/types/purchase';
@@ -30,7 +29,6 @@ interface PurchaseDocumentProps {
   saveNotice?: string | null;
   hidePrintControls?: boolean;
   isEditable?: boolean;
-  validationErrors?: ValidationErrors;
 }
 
 export default function PurchaseDocument({
@@ -41,7 +39,6 @@ export default function PurchaseDocument({
   saveNotice = null,
   hidePrintControls = false,
   isEditable = true,
-  validationErrors = {},
 }: PurchaseDocumentProps) {
   const {
     nomor = '',
@@ -67,14 +64,6 @@ export default function PurchaseDocument({
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [pasteNotice, setPasteNotice] = useState<string | null>(null);
-
-  const errorFor = (path: string) => validationErrors[path] ? <span id={`error-${path}`} role="alert" className="no-print block text-[10px] text-red-700 mt-1">{validationErrors[path]}</span> : null;
-  const quantityChange = (index: number, qty: string, satuan: string) => {
-    if (!onChange) return;
-    const current = dataRef.current;
-    const updated = current.items.map((row, i) => i === index ? updateQuantity(row, qty, satuan) : row);
-    onChange({ ...current, items: updated, totalTaksiran: updated.reduce((sum,row) => sum + row.jumlah,0) });
-  };
 
   // Recalculate total taksiran
   const calculateTotal = (itemList: PurchaseItem[]): number => {
@@ -376,7 +365,7 @@ export default function PurchaseDocument({
                 <div className="flex items-center space-x-1 tracking-wide italic">
                   {/* Rutin */}
                   <span
-                    role="radio" aria-checked={jenis === 'Rutin'} aria-invalid={!!validationErrors.jenis} tabIndex={isEditable ? 0 : -1}
+                    role="radio" aria-checked={jenis === 'Rutin'} tabIndex={isEditable ? 0 : -1}
                     onKeyDown={e=>{if(isEditable && (e.key==='Enter'||e.key===' ')){e.preventDefault();updateField('jenis','Rutin');}}}
                     onClick={() => isEditable && updateField('jenis', 'Rutin')}
                     className={`px-1.5 py-0.5 ${
@@ -394,7 +383,7 @@ export default function PurchaseDocument({
 
                   {/* Non Rutin */}
                   <span
-                    role="radio" aria-checked={jenis === 'Non Rutin'} aria-invalid={!!validationErrors.jenis} tabIndex={isEditable ? 0 : -1}
+                    role="radio" aria-checked={jenis === 'Non Rutin'} tabIndex={isEditable ? 0 : -1}
                     onKeyDown={e=>{if(isEditable && (e.key==='Enter'||e.key===' ')){e.preventDefault();updateField('jenis','Non Rutin');}}}
                     onClick={() => isEditable && updateField('jenis', 'Non Rutin')}
                     className={`px-1.5 py-0.5 ${
@@ -412,7 +401,7 @@ export default function PurchaseDocument({
 
                   {/* Segera */}
                   <span
-                    role="radio" aria-checked={jenis === 'Segera'} aria-invalid={!!validationErrors.jenis} tabIndex={isEditable ? 0 : -1}
+                    role="radio" aria-checked={jenis === 'Segera'} tabIndex={isEditable ? 0 : -1}
                     onKeyDown={e=>{if(isEditable && (e.key==='Enter'||e.key===' ')){e.preventDefault();updateField('jenis','Segera');}}}
                     onClick={() => isEditable && updateField('jenis', 'Segera')}
                     className={`px-1.5 py-0.5 ${
@@ -445,7 +434,7 @@ export default function PurchaseDocument({
                       type="text"
                       value={nomor}
                       onChange={(e) => updateField('nomor', e.target.value)}
-                      aria-label="Nomor FPP" aria-invalid={!!validationErrors.nomor}
+                      aria-label="Nomor FPP"
                       placeholder="ROYAN-0001"
                       className="font-mono font-medium bg-transparent hover:bg-blue-50/50 focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 focus:outline-none px-1 py-0 w-28 text-[10.5px] border-b border-dashed border-gray-300 hover:border-black transition print:hidden"
                     />
@@ -476,7 +465,7 @@ export default function PurchaseDocument({
                   <div className="flex items-center space-x-1 flex-1">
                     <input
                       type="date"
-                      aria-label="Tanggal FPP" aria-invalid={!!validationErrors.tanggal}
+                      aria-label="Tanggal FPP"
                       value={tanggal}
                       onChange={(e) => updateField('tanggal', e.target.value)}
                       className="bg-transparent hover:bg-blue-50/50 focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 focus:outline-none px-1 py-0 text-[10.5px] border-b border-dashed border-gray-300 hover:border-black transition print:hidden"
@@ -539,15 +528,13 @@ export default function PurchaseDocument({
                               handleAddItemRow();
                             }}
                             aria-label={`Nama barang baris ${index + 1}`}
-                            aria-invalid={!!validationErrors[`items.${index}.namaBarang`]}
-                            aria-describedby={validationErrors[`items.${index}.namaBarang`] ? `error-items.${index}.namaBarang` : undefined}
                             value={item.namaBarang}
                             onChange={(e) => handleItemChange(index, 'namaBarang', e.target.value)}
                             placeholder="Ketik nama barang..."
                             className="w-full bg-transparent hover:bg-blue-50/40 focus:bg-blue-50/80 focus:ring-1 focus:ring-blue-400 focus:outline-none px-1 py-0.5 text-[10.5px] rounded transition print:hidden placeholder:text-gray-400 placeholder:italic"
                           />
                           <span className="hidden print:inline-block break-words">{item.namaBarang}</span>
-                          {errorFor(`items.${index}.namaBarang`)}
+                          
                         </>
                       ) : (
                         <span className="break-words">{item.namaBarang}</span>
@@ -558,19 +545,14 @@ export default function PurchaseDocument({
                     <td className="border-r border-black px-1 py-0.5 text-center font-normal">
                       {isEditable ? (
                         <>
-                          <div className="flex items-start gap-0.5 print:hidden">
-                            <input type="number" min="0" step="any" value={splitQuantity(item).qty ?? ''}
-                              aria-label={`Qty baris ${index + 1}`} aria-invalid={!!validationErrors[`items.${index}.qty`]}
-                              onChange={e => quantityChange(index,e.target.value,splitQuantity(item).satuan)}
-                              onKeyDown={event => handleNextItemOnEnter(event,index)} placeholder="Qty"
-                              className="w-[48%] min-w-0 text-center bg-transparent focus:bg-blue-50 focus:outline-none rounded px-0.5 py-1 text-[10px]" />
-                            <input type="text" list="fpp-unit-options" value={splitQuantity(item).satuan}
-                              aria-label={`Satuan barang baris ${index + 1}`} aria-invalid={!!validationErrors[`items.${index}.satuan`]}
-                              onChange={e => quantityChange(index,String(splitQuantity(item).qty ?? ''),e.target.value)}
-                              onKeyDown={event => handleNextItemOnEnter(event,index)} placeholder="Pcs"
-                              className="w-[52%] min-w-0 text-center bg-transparent focus:bg-blue-50 focus:outline-none rounded px-0.5 py-1 text-[10px]" />
-                          </div>
-                          {errorFor(`items.${index}.qty`)}{errorFor(`items.${index}.satuan`)}
+                          <input
+                            type="text"
+                            value={item.banyaknya}
+                            onChange={(e) => handleItemChange(index, 'banyaknya', e.target.value)}
+                            onKeyDown={(event) => handleNextItemOnEnter(event, index)}
+                            placeholder="e.g. 10 Pcs"
+                            className="w-full text-center bg-transparent hover:bg-blue-50/40 focus:bg-blue-50/80 focus:ring-1 focus:ring-blue-400 focus:outline-none px-1 py-0.5 text-[10.5px] rounded transition print:hidden placeholder:text-gray-400 placeholder:italic"
+                          />
                           <span className="hidden print:inline-block whitespace-nowrap">
                             {item.banyaknya || (item.qty ? `${item.qty} ${item.satuan || ''}` : '')}
                           </span>
@@ -588,7 +570,7 @@ export default function PurchaseDocument({
                         <>
                           <input
                             type="number"
-                            aria-label={`Harga satuan baris ${index + 1}`} min="0" aria-invalid={!!validationErrors[`items.${index}.hargaSatuan`]}
+                            aria-label={`Harga satuan baris ${index + 1}`} min="0"
                             value={item.hargaSatuan === 0 ? '' : item.hargaSatuan}
                             onKeyDown={(event) => handleNextItemOnEnter(event, index)}
                             onChange={(e) =>
@@ -614,7 +596,7 @@ export default function PurchaseDocument({
                         <>
                           <input
                             type="number"
-                            aria-label={`Jumlah harga baris ${index + 1}`} min="0" aria-invalid={!!validationErrors[`items.${index}.jumlah`]}
+                            aria-label={`Jumlah harga baris ${index + 1}`} min="0"
                             value={item.jumlah === 0 ? '' : item.jumlah}
                             onKeyDown={(event) => handleNextItemOnEnter(event, index)}
                             onChange={(e) =>
@@ -818,7 +800,7 @@ export default function PurchaseDocument({
                     <>
                       <input
                         type="text"
-                        aria-label="Nama pemohon" aria-invalid={!!validationErrors.dimintaOleh}
+                        aria-label="Nama pemohon"
                         value={dimintaOleh}
                         onChange={(e) => updateField('dimintaOleh', e.target.value)}
                         placeholder="Royan"

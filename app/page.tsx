@@ -26,10 +26,7 @@ import {
   listDrafts,
   removeDraft,
   storeDraft,
-  validatePurchase,
-  ValidationErrors,
 } from '@/lib/purchaseEditing';
-import PurchaseHistory from '@/components/purchase/PurchaseHistory';
 
 // Icons
 import {
@@ -50,7 +47,18 @@ function createBlankPurchase(purchases: PurchaseRequisition[]): PurchaseRequisit
     id: 'fpp-' + crypto.randomUUID(),
     nomor: generateNextNomor(purchases),
     tanggal: todayInJakarta(now),
-    items: DEFAULT_PURCHASE_REQUISITION.items.map((item) => ({ ...item })),
+    jenis: 'Rutin',
+    items: [
+      {
+        id: 'item-1',
+        no: 1,
+        namaBarang: '',
+        banyaknya: '',
+        hargaSatuan: 0,
+        jumlah: 0,
+        supplier: '',
+      },
+    ],
     photos: [],
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
@@ -60,6 +68,7 @@ function createBlankPurchase(purchases: PurchaseRequisition[]): PurchaseRequisit
 export default function MainPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('FORM');
   const [purchases, setPurchases] = useState<PurchaseRequisition[]>([]);
+  
   // Hitung penggunaan kuota database Supabase (Batas Free Tier: 500 MB)
   const quotaUsageText = React.useMemo(() => {
     try {
@@ -83,12 +92,9 @@ export default function MainPage() {
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
-  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [savedFingerprint, setSavedFingerprint] = useState('');
   const [draftReady, setDraftReady] = useState(false);
-  const [draftStatus, setDraftStatus] = useState('');
   const [drafts, setDrafts] = useState<ReturnType<typeof listDrafts>>([]);
-  const [historyOpen, setHistoryOpen] = useState(false);
   const currentRef = useRef(currentPurchase);
   currentRef.current = currentPurchase;
   const dirty = draftReady && fingerprint(currentPurchase) !== savedFingerprint;
@@ -97,26 +103,19 @@ export default function MainPage() {
     const draft = restore ? getDraft(item.id) : null;
     setCurrentPurchase(draft?.purchase || item);
     setSavedFingerprint(fingerprint(item));
-    setValidationErrors({});
-    setDraftStatus(draft ? 'Draft lokal dipulihkan' : '');
   };
 
   const handleDocumentChange = (item: PurchaseRequisition) => {
     setCurrentPurchase(item);
-    if (Object.keys(validationErrors).length) setValidationErrors(validatePurchase(item, purchases));
   };
 
   useEffect(() => {
     if (!draftReady || !dirty || isLoading) return;
-    setDraftStatus('Menyimpan draft…');
     const timer = window.setTimeout(() => {
       try {
         storeDraft(currentPurchase);
         setDrafts(listDrafts());
-        setDraftStatus('Draft tersimpan di perangkat ini');
-      } catch {
-        setDraftStatus('Draft belum tersimpan: penyimpanan perangkat penuh');
-      }
+      } catch {}
     }, 500);
     return () => window.clearTimeout(timer);
   }, [currentPurchase, dirty, draftReady, isLoading]);
@@ -185,7 +184,6 @@ export default function MainPage() {
             : blank
         )
       );
-      setDraftStatus(draft ? 'Draft lokal dipulihkan' : '');
       setDrafts(listDrafts());
       setDraftReady(true);
     }
@@ -246,8 +244,8 @@ export default function MainPage() {
     if (!confirmDiscard()) return;
     openPurchase(createBlankPurchase(purchases), false);
     setActiveTab('FORM');
-    setSaveNotice('Formulir baru berhasil dibuat. Silakan ketik langsung pada formulir.');
-    setTimeout(() => setSaveNotice(null), 3500);
+    setSaveNotice('Formulir baru siap diisi.');
+    setTimeout(() => setSaveNotice(null), 3000);
   };
 
   const handleGenerateNomor = () => {
@@ -260,13 +258,6 @@ export default function MainPage() {
 
   const handleSavePurchase = async () => {
     if (isSaving) return;
-    const errors = validatePurchase(currentPurchase, purchases);
-    setValidationErrors(errors);
-    if (Object.keys(errors).length) {
-      setSaveNotice('Periksa kolom yang ditandai sebelum menyimpan.');
-      window.setTimeout(() => document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(), 0);
-      return;
-    }
     const snapshot = structuredClone(currentPurchase);
     setIsSaving(true);
     setSaveNotice(null);
@@ -277,8 +268,8 @@ export default function MainPage() {
     if (result.success) {
       setSaveNotice(
         result.fromCloud
-          ? `FPP ${snapshot.nomor} tersimpan di cloud.`
-          : `FPP ${snapshot.nomor} tersimpan lokal; belum tersinkron ke cloud.`
+          ? `✓ Formulir ${snapshot.nomor} berhasil tersimpan di cloud!`
+          : `✓ Formulir ${snapshot.nomor} tersimpan lokal; belum tersinkron ke cloud.`
       );
       setPurchases((previous) =>
         previous.some((p) => p.id === snapshot.id)
@@ -286,13 +277,10 @@ export default function MainPage() {
           : [snapshot, ...previous]
       );
       setSavedFingerprint(fingerprint(snapshot));
-      if (fingerprint(currentRef.current) === fingerprint(snapshot)) {
-        try {
-          removeDraft(snapshot.id);
-          setDrafts(listDrafts());
-        } catch {}
-        setDraftStatus(result.fromCloud ? 'Tersimpan di cloud' : 'Tersimpan lokal, menunggu sinkronisasi');
-      }
+      try {
+        removeDraft(snapshot.id);
+        setDrafts(listDrafts());
+      } catch {}
       setTimeout(() => setSaveNotice(null), 4000);
     } else {
       alert('Gagal menyimpan formulir.');
@@ -325,7 +313,8 @@ export default function MainPage() {
   const handleDuplicatePurchase = (item: PurchaseRequisition) => {
     if (!confirmDiscard()) return;
     openPurchase(duplicatePurchase(item, generateNextNomor(purchases), todayInJakarta()), false);
-    setSaveNotice(`Salinan ${item.nomor} siap diedit. Simpan untuk membuat FPP baru.`);
+    setSaveNotice(`Salinan ${item.nomor} siap diedit.`);
+    setTimeout(() => setSaveNotice(null), 3000);
   };
 
   const handleSelectForPreview = (item: PurchaseRequisition) => {
@@ -362,7 +351,7 @@ export default function MainPage() {
                   type="button"
                   disabled={isLoading}
                   onClick={handleAddNewFPP}
-                  className="inline-flex items-center justify-center w-10 h-10 shrink-0 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition active:scale-95 disabled:opacity-50"
+                  className="inline-flex items-center justify-center w-10 h-10 shrink-0 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition active:scale-95 disabled:opacity-50 shadow-sm"
                   aria-label="Formulir baru"
                   title="Buat formulir baru dengan nomor urut berikutnya"
                 >
@@ -371,7 +360,7 @@ export default function MainPage() {
                 <button
                   type="button"
                   onClick={() => window.print()}
-                  className="inline-flex items-center justify-center w-10 h-10 shrink-0 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition active:scale-95 disabled:opacity-50"
+                  className="inline-flex items-center justify-center w-10 h-10 shrink-0 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition active:scale-95 disabled:opacity-50 shadow-sm"
                   aria-label="Cetak / PDF"
                   title="Cetak langsung atau simpan sebagai PDF A4 (Pasti 1 Halaman)"
                 >
@@ -382,7 +371,7 @@ export default function MainPage() {
                   type="button"
                   onClick={handleSavePurchase}
                   disabled={isSaving || isLoading}
-                  className="inline-flex items-center justify-center w-10 h-10 shrink-0 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition active:scale-95 disabled:opacity-50"
+                  className="inline-flex items-center justify-center w-10 h-10 shrink-0 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-emerald-600 hover:bg-emerald-700 text-white transition active:scale-95 disabled:opacity-50 shadow-sm"
                   aria-label={isSaving ? 'Menyimpan...' : 'Simpan FPP'}
                   aria-busy={isSaving}
                   title="Simpan formulir ke database Supabase dan penyimpanan lokal"
@@ -424,55 +413,13 @@ export default function MainPage() {
 
       {/* Main Content Area */}
       <main className="flex-1 p-3 sm:p-6 max-w-7xl w-full mx-auto flex flex-col items-center">
-        {/* Render Direct Interactive Form Document */}
         {activeTab === 'FORM' && (
           <div className="w-full grid grid-cols-1 xl:grid-cols-[minmax(0,210mm)_minmax(0,1fr)] gap-6 items-start print:block">
             <div className="w-full max-w-[210mm] mx-auto space-y-3">
-              <div className="no-print flex flex-wrap items-center justify-between gap-2 text-xs">
-                <p
-                  role="status"
-                  aria-live="polite"
-                  className={
-                    dirty ? 'text-amber-700 dark:text-amber-300' : 'text-emerald-700 dark:text-emerald-300'
-                  }
-                >
-                  {dirty
-                    ? `Belum disimpan ke cloud • ${draftStatus || 'Draft aktif'}`
-                    : draftStatus || 'Formulir siap diisi'}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setHistoryOpen((value) => !value)}
-                  className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 transition"
-                >
-                  Riwayat perubahan
-                </button>
-              </div>
-
-              {Object.keys(validationErrors).length > 0 && (
-                <div
-                  role="alert"
-                  className="no-print border border-red-300 bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-300 rounded-xl p-3 text-xs"
-                >
-                  <strong>Lengkapi formulir:</strong>
-                  <ul className="list-disc pl-4 mt-1 space-y-0.5">
-                    {Object.entries(validationErrors).map(([key, message]) => (
-                      <li key={key}>
-                        {key.startsWith('items.') ? `Baris ${Number(key.split('.')[1]) + 1}: ` : ''}
-                        {message}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {historyOpen && <PurchaseHistory purchaseId={currentPurchase.id} />}
-
               <PurchaseDocument
                 key={currentPurchase.id || 'current-fpp'}
                 data={currentPurchase}
                 onChange={handleDocumentChange}
-                validationErrors={validationErrors}
                 onSave={handleSavePurchase}
                 onGenerateNomor={handleGenerateNomor}
                 saveNotice={saveNotice}
@@ -500,8 +447,6 @@ export default function MainPage() {
                               purchases.find((p) => p.id === draft.purchase.id) || blankBaseline(draft.purchase)
                             )
                           );
-                          setValidationErrors({});
-                          setDraftStatus('Draft lokal dipulihkan');
                         }}
                       >
                         <span className="font-medium">{draft.purchase.nomor}</span> •{' '}
