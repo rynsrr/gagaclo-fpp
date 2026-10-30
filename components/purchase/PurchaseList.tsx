@@ -13,7 +13,6 @@ import {
   ArrowUpDown,
   Copy,
   Eye,
-  Users,
   X,
 } from 'lucide-react';
 
@@ -161,115 +160,36 @@ export default function PurchaseList({
   return (
     <div className="w-full min-w-0 space-y-3">
       {/* Search & User Filter */}
-      <div className="space-y-2">
-        <div className="flex gap-2 items-center">
-          <div className="relative flex-1">
-            <Search aria-hidden="true" className="absolute left-3 top-2.5 w-4 h-4 text-zinc-500" />
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              aria-label="Cari FPP"
-              placeholder="Cari FPP, barang, supplier, pemohon..."
-              className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 pl-9 pr-3 py-2 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400"
-            />
-          </div>
-          {/* Quick Select Dropdown */}
-          <div className="relative shrink-0">
-            <select
-              value={selectedUser}
-              onChange={(e) => setSelectedUser(e.target.value)}
-              aria-label="Filter berdasarkan akun"
-              className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-2.5 py-2 text-xs font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-400 cursor-pointer"
-            >
-              <option value="ALL">Semua User ({totalAllPurchases !== undefined ? totalAllPurchases : purchases.length})</option>
-              {availableUsers.map((user) => {
-                const count = userCounts[user.toLowerCase()] || 0;
-                return (
-                  <option key={user} value={user}>
-                    {user} ({count})
-                  </option>
-                );
-              })}
-            </select>
-          </div>
+      <div className="flex gap-2 items-center">
+        <div className="relative flex-1">
+          <Search aria-hidden="true" className="absolute left-3 top-2.5 w-4 h-4 text-zinc-500" />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            aria-label="Cari FPP"
+            placeholder="Cari FPP, barang, supplier, pemohon..."
+            className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 pl-9 pr-3 py-2 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+          />
         </div>
-
-        {/* User Filter Chips */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
-          <span className="text-[11px] text-zinc-400 flex items-center gap-1 shrink-0 pl-0.5 pr-1 font-medium">
-            <Users className="w-3.5 h-3.5" />
-            <span>Filter:</span>
-          </span>
-
-          <button
-            type="button"
-            onClick={() => setSelectedUser('ALL')}
-            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition shrink-0 flex items-center gap-1.5 ${
-              selectedUser === 'ALL'
-                ? 'bg-blue-600 text-white shadow-sm ring-1 ring-blue-600'
-                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'
-            }`}
+        {/* Quick Select Dropdown */}
+        <div className="relative shrink-0">
+          <select
+            value={selectedUser}
+            onChange={(e) => setSelectedUser(e.target.value)}
+            aria-label="Filter berdasarkan akun"
+            className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-2.5 py-2 text-xs font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-400 cursor-pointer"
           >
-            <span>Semua</span>
-            <span
-              className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                selectedUser === 'ALL'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300'
-              }`}
-            >
-              {totalAllPurchases !== undefined ? totalAllPurchases : purchases.length}
-            </span>
-          </button>
-
-          {availableUsers.map((user) => {
-            const count = userCounts[user.toLowerCase()] || 0;
-            const isSelected = selectedUser.toLowerCase() === user.toLowerCase();
-            const isCurrent = currentUser && currentUser.trim().toLowerCase() === user.toLowerCase();
-
-            return (
-              <button
-                key={user}
-                type="button"
-                onClick={() => setSelectedUser(isSelected ? 'ALL' : user)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition shrink-0 flex items-center gap-1.5 ${
-                  isSelected
-                    ? 'bg-blue-600 text-white shadow-sm ring-1 ring-blue-600'
-                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'
-                }`}
-                title={`Filter FPP milik ${user}${isCurrent ? ' (Akun Anda)' : ''}`}
-              >
-                <span>{user}</span>
-                {isCurrent && (
-                  <span className={`text-[9px] px-1 rounded ${isSelected ? 'bg-blue-700 text-blue-100' : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-500'}`}>
-                    Saya
-                  </span>
-                )}
-                <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                    isSelected
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300'
-                  }`}
-                >
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-
-          {selectedUser !== 'ALL' && (
-            <button
-              type="button"
-              onClick={() => setSelectedUser('ALL')}
-              className="text-[11px] text-zinc-400 hover:text-red-500 flex items-center gap-0.5 px-1.5 py-1 transition shrink-0 ml-1"
-              title="Reset filter user"
-            >
-              <X className="w-3 h-3" />
-              <span>Reset</span>
-            </button>
-          )}
+            <option value="ALL">Semua User ({totalAllPurchases !== undefined ? totalAllPurchases : purchases.length})</option>
+            {availableUsers.map((user) => {
+              const count = userCounts[user.toLowerCase()] || 0;
+              return (
+                <option key={user} value={user}>
+                  {user} ({count})
+                </option>
+              );
+            })}
+          </select>
         </div>
       </div>
       {/* TABLE */}
