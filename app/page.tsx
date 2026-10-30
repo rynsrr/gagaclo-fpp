@@ -18,6 +18,7 @@ import PurchaseDocument from '@/components/purchase/PurchaseDocument';
 import PurchaseList from '@/components/purchase/PurchaseList';
 import PurchaseSummary from '@/components/purchase/PurchaseSummary';
 import R2Quota from '@/components/purchase/R2Quota';
+import PasswordModal from '@/components/purchase/PasswordModal';
 import {
   blankBaseline,
   duplicatePurchase,
@@ -37,6 +38,8 @@ import {
   Sun,
   Moon,
   Trash2,
+  Lock,
+  UserCheck,
 } from 'lucide-react';
 
 type ActiveTab = 'FORM';
@@ -92,6 +95,25 @@ export default function MainPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('fpp_edit_user') || sessionStorage.getItem('fpp_edit_user');
+      if (saved) setCurrentUser(saved);
+    } catch {}
+  }, []);
+
+  const handleLogout = () => {
+    try {
+      localStorage.removeItem('fpp_edit_user');
+      sessionStorage.removeItem('fpp_edit_user');
+    } catch {}
+    setCurrentUser(null);
+    setSaveNotice('Mode edit dikunci. Anda berada dalam Mode Lihat.');
+    setTimeout(() => setSaveNotice(null), 3000);
+  };
 
   const [savedFingerprint, setSavedFingerprint] = useState('');
   const [draftReady, setDraftReady] = useState(false);
@@ -242,6 +264,10 @@ export default function MainPage() {
   }, [dirty]);
 
   const handleAddNewFPP = () => {
+    if (!currentUser) {
+      setIsPasswordModalOpen(true);
+      return;
+    }
     if (!confirmDiscard()) return;
     openPurchase(createBlankPurchase(purchases), false);
     setActiveTab('FORM');
@@ -258,6 +284,10 @@ export default function MainPage() {
   };
 
   const handleSavePurchase = async () => {
+    if (!currentUser) {
+      setIsPasswordModalOpen(true);
+      return;
+    }
     if (isSaving) return;
     const snapshot = structuredClone(currentPurchase);
     setIsSaving(true);
@@ -289,12 +319,20 @@ export default function MainPage() {
   };
 
   const handleSelectForEdit = (item: PurchaseRequisition) => {
+    if (!currentUser) {
+      setIsPasswordModalOpen(true);
+      return;
+    }
     if (!confirmDiscard()) return;
     openPurchase(item);
     setActiveTab('FORM');
   };
 
   const handleDeletePurchase = async (id: string, nomor: string) => {
+    if (!currentUser) {
+      setIsPasswordModalOpen(true);
+      return;
+    }
     if (confirm(`Apakah Anda yakin ingin menghapus formulir ${nomor}?`)) {
       const toDelete = purchases.find((p) => p.id === id);
       if (toDelete && Array.isArray(toDelete.photos)) {
@@ -375,6 +413,33 @@ export default function MainPage() {
 
             {/* Right Status & Fast Action */}
             <div className="flex flex-wrap items-center justify-end gap-2">
+              {/* Status Akun Editor */}
+              {!currentUser ? (
+                <button
+                  type="button"
+                  onClick={() => setIsPasswordModalOpen(true)}
+                  className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 transition shadow-sm"
+                  title="Dokumen dalam Mode Hanya Baca. Klik untuk masuk sebagai editor"
+                >
+                  <Lock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                  <span className="hidden sm:inline">Mode Lihat</span>
+                  <span className="sm:hidden">Masuk</span>
+                </button>
+              ) : (
+                <div className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 shadow-sm">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="font-semibold capitalize">{currentUser}</span>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="ml-1 text-[10px] text-zinc-500 hover:text-red-500 hover:underline"
+                    title="Keluar mode edit"
+                  >
+                    Keluar
+                  </button>
+                </div>
+              )}
+
               <div className="no-print flex items-center gap-2" role="group" aria-label="Aksi formulir">
                 <button
                   type="button"
@@ -445,6 +510,21 @@ export default function MainPage() {
         {activeTab === 'FORM' && (
           <div className="w-full grid grid-cols-1 xl:grid-cols-[minmax(0,210mm)_minmax(0,1fr)] gap-6 items-start print:block">
             <div className="w-full max-w-[210mm] mx-auto space-y-3">
+              {!currentUser && (
+                <div className="no-print flex items-center justify-between p-2.5 rounded-xl border border-amber-200 dark:border-amber-900/40 bg-amber-50/80 dark:bg-amber-950/20 text-xs text-amber-800 dark:text-amber-300 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>Dokumen dalam <strong>Mode Lihat</strong>. Masuk dengan akun editor (royan, ryan, amin, hanami, cynara) untuk mengedit.</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsPasswordModalOpen(true)}
+                    className="px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs transition active:scale-95 shrink-0"
+                  >
+                    Masuk Edit
+                  </button>
+                </div>
+              )}
               <PurchaseDocument
                 key={currentPurchase.id || 'current-fpp'}
                 data={currentPurchase}
@@ -452,7 +532,7 @@ export default function MainPage() {
                 onSave={handleSavePurchase}
                 onGenerateNomor={handleGenerateNomor}
                 saveNotice={saveNotice}
-                isEditable={!isLoading}
+                isEditable={Boolean(currentUser) && !isLoading}
               />
             </div>
 
@@ -518,14 +598,23 @@ export default function MainPage() {
                 onAddNew={handleAddNewFPP}
                 onDelete={handleDeletePurchase}
                 onDuplicate={handleDuplicatePurchase}
-                canEdit={true}
-                canDelete={true}
+                canEdit={Boolean(currentUser)}
+                canDelete={Boolean(currentUser)}
                 onRefresh={() => loadData()}
               />
             </div>
           </div>
         )}
       </main>
+      <PasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+        onSuccess={(username) => {
+          setCurrentUser(username);
+          setSaveNotice(`Mode edit aktif. Masuk sebagai ${username.charAt(0).toUpperCase() + username.slice(1)}.`);
+          setTimeout(() => setSaveNotice(null), 3500);
+        }}
+      />
     </div>
   );
 }
