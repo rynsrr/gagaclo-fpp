@@ -9,7 +9,7 @@ function service({ storageFails = false, cloudFails = true, configured = false }
   const query = { upsert: async () => ({ error: cloudFails ? { message: 'offline' } : null }) };
   const code = ts.transpileModule(fs.readFileSync('lib/purchaseService.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
   vm.runInNewContext(code, {
-    exports, require: () => ({ isSupabaseConfigured: () => configured, supabase: { from: () => query } }),
+    exports, require: (name) => name === './storageScope' ? { storageScope: () => 'legacy' } : ({ isSupabaseConfigured: () => configured, supabase: { from: () => query } }),
     window: {}, localStorage: { getItem: k => values.get(k) || null, setItem: (k,v) => { if(storageFails) throw Error('quota'); values.set(k,v); } },
     console: { error() {}, warn() {} }, Intl, Date, Set,
   });

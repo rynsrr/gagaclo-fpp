@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PurchaseRequisition, DEFAULT_PURCHASE_REQUISITION } from '@/types/purchase';
 import {
   getAllPurchases,
@@ -18,6 +18,10 @@ import PurchaseList from '@/components/purchase/PurchaseList';
 import PurchaseSummary from '@/components/purchase/PurchaseSummary';
 import PasswordModal from '@/components/purchase/PasswordModal';
 import R2Quota from '@/components/purchase/R2Quota';
+import { blankBaseline, duplicatePurchase, fingerprint, getDraft, listDrafts, removeDraft, storeDraft, validatePurchase, ValidationErrors } from '@/lib/purchaseEditing';
+import PurchaseHistory from '@/components/purchase/PurchaseHistory';
+import AccessPanel from '@/components/purchase/AccessPanel';
+import AuthGate, {useFppAccess} from '@/components/purchase/AuthGate';
 
 // Icons
 import {
@@ -47,7 +51,8 @@ function createBlankPurchase(purchases: PurchaseRequisition[]): PurchaseRequisit
   };
 }
 
-export default function MainPage() {
+function MainPage() {
+  const access=useFppAccess();
   const [activeTab, setActiveTab] = useState<ActiveTab>('FORM');
   const [purchases, setPurchases] = useState<PurchaseRequisition[]>([]);
   // Hitung penggunaan kuota database Supabase (Batas Free Tier: 500 MB)
@@ -75,16 +80,59 @@ export default function MainPage() {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
 
+  const [validationErrors,setValidationErrors] = useState<ValidationErrors>({});
+  const [savedFingerprint,setSavedFingerprint] = useState('');
+  const [draftReady,setDraftReady] = useState(false);
+  const [draftStatus,setDraftStatus] = useState('');
+  const [drafts,setDrafts]=useState<ReturnType<typeof listDrafts>>([]);
+  const [historyOpen,setHistoryOpen] = useState(false);
+  const currentRef = useRef(currentPurchase);
+  currentRef.current = currentPurchase;
+  const dirty = draftReady && fingerprint(currentPurchase) !== savedFingerprint;
+  const openPurchase = (item: PurchaseRequisition, restore = true) => {
+    const draft = restore ? getDraft(item.id) : null;
+    setCurrentPurchase(draft?.purchase || item);
+    setSavedFingerprint(fingerprint(item));
+    setValidationErrors({});
+    setDraftStatus(draft ? 'Draft lokal dipulihkan' : '');
+  };
+  const handleDocumentChange = (item: PurchaseRequisition) => {
+    setCurrentPurchase(item);
+    if (Object.keys(validationErrors).length) setValidationErrors(validatePurchase(item,purchases));
+  };
+  useEffect(() => {
+    if (!draftReady || !dirty || isLoading || !isEditUnlocked) return;
+    setDraftStatus('Menyimpan draft…');
+    const timer=window.setTimeout(()=>{
+      try { storeDraft(currentPurchase); setDrafts(listDrafts()); setDraftStatus('Draft tersimpan di perangkat ini'); }
+      catch { setDraftStatus('Draft belum tersimpan: penyimpanan perangkat penuh'); }
+    },500);
+    return ()=>window.clearTimeout(timer);
+  },[currentPurchase,dirty,draftReady,isLoading,isEditUnlocked]);
+  useEffect(()=>{
+    const flush=()=>{if(draftReady && dirty){try{storeDraft(currentRef.current);}catch{}}};
+    window.addEventListener('pagehide',flush);
+    document.addEventListener('visibilitychange',flush);
+    window.addEventListener('fpp-flush-draft',flush);
+    return ()=>{window.removeEventListener('pagehide',flush);document.removeEventListener('visibilitychange',flush);window.removeEventListener('fpp-flush-draft',flush);};
+  },[draftReady,dirty]);
+
+  useEffect(()=>{if(access.required)setIsEditUnlocked(access.canEdit);},[access.required,access.canEdit]);
+
   // Sync edit mode from sessionStorage on mount
   useEffect(() => {
     try {
-      if (sessionStorage.getItem('fpp_edit_unlocked') === 'true') {
+      if (!access.required && sessionStorage.getItem('fpp_edit_unlocked') === 'true') {
         setIsEditUnlocked(true);
       }
     } catch {}
   }, []);
 
   const requestEditAccess = (onSuccessAction?: () => void) => {
+    if(access.required){
+      if(!access.canEdit){setSaveNotice('Akun ini hanya dapat melihat dan mencetak FPP.');return false;}
+      setIsEditUnlocked(true);onSuccessAction?.();return true;
+    }
     if (isEditUnlocked) {
       if (onSuccessAction) onSuccessAction();
       return true;
@@ -150,7 +198,15 @@ export default function MainPage() {
     const { data } = await getAllPurchases();
     const savedPurchases = data || [];
     setPurchases(savedPurchases);
-    if (initialize) setCurrentPurchase(createBlankPurchase(savedPurchases));
+    if (initialize) {
+      const draft=getDraft();
+      const blank=createBlankPurchase(savedPurchases);
+      setCurrentPurchase(draft?.purchase || blank);
+      setSavedFingerprint(fingerprint(draft ? savedPurchases.find(p=>p.id===draft.purchase.id) || blankBaseline(draft.purchase) : blank));
+      setDraftStatus(draft ? 'Draft lokal dipulihkan' : '');
+      setDrafts(listDrafts());
+      setDraftReady(true);
+    }
 
     setIsLoading(false);
   };
@@ -181,31 +237,24 @@ export default function MainPage() {
 
   // Handlers
   const confirmDiscard = () => {
-    const saved = purchases.find((purchase) => purchase.id === currentPurchase.id);
-    const baseline = saved || { ...DEFAULT_PURCHASE_REQUISITION, nomor: currentPurchase.nomor, tanggal: currentPurchase.tanggal };
-    const fields = ['jenis', 'items', 'uraianKeperluan', 'catatan', 'photos', 'dimintaOleh', 'tanggalDiterima'] as const;
-    const dirty = fields.some((field) => JSON.stringify(currentPurchase[field]) !== JSON.stringify(baseline[field]));
-    return !dirty || confirm('Ada perubahan belum disimpan. Tinggalkan perubahan ini?');
+    if (!dirty) return true;
+    try { storeDraft(currentPurchase); return true; }
+    catch { return confirm('Draft belum dapat disimpan di perangkat. Tinggalkan perubahan ini?'); }
   };
-
   useEffect(() => {
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      const saved = purchases.find((purchase) => purchase.id === currentPurchase.id);
-      const baseline = saved || DEFAULT_PURCHASE_REQUISITION;
-      const fields = ['jenis', 'items', 'uraianKeperluan', 'catatan', 'photos', 'dimintaOleh', 'tanggalDiterima'] as const;
-      if (fields.some((field) => JSON.stringify(currentPurchase[field]) !== JSON.stringify(baseline[field]))) {
-        event.preventDefault();
-        event.returnValue = '';
-      }
+    const beforeUnload=(event: BeforeUnloadEvent)=>{
+      if(!dirty) return;
+      try { storeDraft(currentRef.current); }
+      catch { event.preventDefault(); event.returnValue=''; }
     };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [currentPurchase, purchases]);
+    window.addEventListener('beforeunload',beforeUnload);
+    return ()=>window.removeEventListener('beforeunload',beforeUnload);
+  },[dirty]);
 
   const handleAddNewFPP = () => {
     if (!isEditUnlocked) {
       requestEditAccess(() => {
-        setCurrentPurchase(createBlankPurchase(purchases));
+        openPurchase(createBlankPurchase(purchases),false);
         setActiveTab('FORM');
         setSaveNotice('Formulir baru berhasil dibuat. Silakan ketik langsung pada formulir.');
         setTimeout(() => setSaveNotice(null), 3500);
@@ -213,7 +262,7 @@ export default function MainPage() {
       return;
     }
     if (!confirmDiscard()) return;
-    setCurrentPurchase(createBlankPurchase(purchases));
+    openPurchase(createBlankPurchase(purchases),false);
     setActiveTab('FORM');
     setSaveNotice('Formulir baru berhasil dibuat. Silakan ketik langsung pada formulir.');
     setTimeout(() => setSaveNotice(null), 3500);
@@ -229,44 +278,32 @@ export default function MainPage() {
 
   const handleSavePurchase = async () => {
     if (!isEditUnlocked) {
-      requestEditAccess(() => {
-        handleSavePurchase();
-      });
+      requestEditAccess();
       return;
     }
-    if (!currentPurchase.nomor || !currentPurchase.nomor.trim()) {
-      alert('Nomor formulir tidak boleh kosong.');
-      return;
-    }
-
-    if (!currentPurchase.jenis) {
-      alert('Pilih jenis formulir: Rutin, Non Rutin, atau Segera.');
-      return;
-    }
-
     if (isSaving) return;
-    if (purchases.some((purchase) => purchase.id !== currentPurchase.id && purchase.nomor.trim().toUpperCase() === currentPurchase.nomor.trim().toUpperCase())) {
-      alert('Nomor FPP sudah digunakan. Generate nomor baru sebelum menyimpan.');
+    const errors=validatePurchase(currentPurchase,purchases);
+    setValidationErrors(errors);
+    if(Object.keys(errors).length) {
+      setSaveNotice('Periksa kolom yang ditandai sebelum menyimpan.');
+      window.setTimeout(()=>document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),0);
       return;
     }
+    const snapshot=structuredClone(currentPurchase);
     setIsSaving(true);
     setSaveNotice(null);
 
-    const result = await savePurchase(currentPurchase);
+    const result = await savePurchase(snapshot);
     setIsSaving(false);
 
     if (result.success) {
-      const destination = result.fromCloud
-        ? (result.localSaved ? 'Supabase Cloud Database & Penyimpanan Lokal' : 'Supabase Cloud Database')
-        : 'Penyimpanan Lokal (Browser Storage)';
-      setSaveNotice(`Formulir ${currentPurchase.nomor} berhasil disimpan ke ${destination}!`);
-      
-      // Update local state without losing focus
-      const updatedList = purchases.some((p) => p.id === currentPurchase.id)
-        ? purchases.map((p) => (p.id === currentPurchase.id ? currentPurchase : p))
-        : [currentPurchase, ...purchases];
-      setPurchases(updatedList);
-
+      setSaveNotice(result.fromCloud ? `FPP ${snapshot.nomor} tersimpan di cloud.` : `FPP ${snapshot.nomor} tersimpan lokal; belum tersinkron ke cloud.`);
+      setPurchases(previous=>previous.some(p=>p.id===snapshot.id) ? previous.map(p=>p.id===snapshot.id?snapshot:p) : [snapshot,...previous]);
+      setSavedFingerprint(fingerprint(snapshot));
+      if(fingerprint(currentRef.current)===fingerprint(snapshot)) {
+        try { removeDraft(snapshot.id); setDrafts(listDrafts()); } catch {}
+        setDraftStatus(result.fromCloud ? 'Tersimpan di cloud' : 'Tersimpan lokal, menunggu sinkronisasi');
+      }
       setTimeout(() => setSaveNotice(null), 4000);
     } else {
       alert('Gagal menyimpan formulir.');
@@ -276,17 +313,18 @@ export default function MainPage() {
   const handleSelectForEdit = (item: PurchaseRequisition) => {
     if (!isEditUnlocked) {
       requestEditAccess(() => {
-        setCurrentPurchase(item);
+        openPurchase(item);
         setActiveTab('FORM');
       });
       return;
     }
     if (!confirmDiscard()) return;
-    setCurrentPurchase(item);
+    openPurchase(item);
     setActiveTab('FORM');
   };
 
   const handleDeletePurchase = (id: string, nomor: string) => {
+    if(!access.canDelete){setSaveNotice('Hanya admin yang dapat menghapus FPP.');return;}
     if (!isEditUnlocked) {
       requestEditAccess(async () => {
         if (confirm(`Apakah Anda yakin ingin menghapus formulir ${nomor}?`)) {
@@ -311,9 +349,19 @@ export default function MainPage() {
     }
   };
 
+  const handleDuplicatePurchase = (item: PurchaseRequisition) => {
+    const duplicate=()=>{
+      if(!confirmDiscard()) return;
+      openPurchase(duplicatePurchase(item,generateNextNomor(purchases),todayInJakarta()),false);
+      setSaveNotice(`Salinan ${item.nomor} siap diedit. Simpan untuk membuat FPP baru.`);
+    };
+    if(!isEditUnlocked) {requestEditAccess(duplicate);return;}
+    duplicate();
+  };
+
   const handleSelectForPreview = (item: PurchaseRequisition) => {
     if (!confirmDiscard()) return;
-    setCurrentPurchase(item);
+    openPurchase(item);
     setActiveTab('FORM');
   };
 
@@ -344,7 +392,8 @@ export default function MainPage() {
                 type="button"
                 onClick={() => requestEditAccess()}
                 className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 transition shadow-sm"
-                title="Dokumen dalam Mode Hanya Baca. Klik untuk membuka Mode Edit"
+                disabled={!access.canEdit}
+                title={access.canEdit ? "Klik untuk membuka Mode Edit" : "Akun ini hanya dapat melihat dan mencetak"}
               >
                 <Lock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                 <span className="hidden sm:inline">Hanya Baca</span>
@@ -439,10 +488,11 @@ export default function MainPage() {
             <div className="no-print w-full flex items-center justify-between px-4 py-2.5 bg-amber-500/10 border border-amber-500/25 rounded-xl text-amber-800 dark:text-amber-300 text-xs">
               <div className="flex items-center space-x-2">
                 <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                <span>Dokumen dalam <strong>Mode Hanya Baca</strong>. Masukkan password untuk mengedit.</span>
+                <span>Dokumen dalam <strong>Mode Hanya Baca</strong>. {access.required ? (access.canEdit ? 'Buka mode edit untuk mengubah formulir.' : 'Akun Anda memiliki izin lihat dan cetak.') : 'Masukkan password untuk mengedit.'}</span>
               </div>
               <button
                 type="button"
+                disabled={!access.canEdit}
                 onClick={() => requestEditAccess()}
                 className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-black font-semibold rounded-lg text-xs transition active:scale-95 shadow-sm"
               >
@@ -465,10 +515,17 @@ export default function MainPage() {
               </button>
             </div>
           )}
+          <div className="no-print flex flex-wrap items-center justify-between gap-2 text-xs">
+            <p role="status" aria-live="polite" className={dirty ? 'text-amber-700 dark:text-amber-300' : 'text-emerald-700 dark:text-emerald-300'}>{dirty ? `Belum disimpan ke cloud • ${draftStatus || 'Draft aktif'}` : draftStatus || 'Formulir siap diisi'}</p>
+            <button type="button" onClick={()=>setHistoryOpen(value=>!value)} className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-zinc-700">Riwayat perubahan</button>
+          </div>
+          {Object.keys(validationErrors).length>0 && <div role="alert" className="no-print border border-red-300 bg-red-50 text-red-800 rounded-xl p-3 text-xs"><strong>Lengkapi formulir:</strong><ul className="list-disc pl-4">{Object.entries(validationErrors).map(([key,message])=><li key={key}>{key.startsWith('items.') ? `Baris ${Number(key.split('.')[1])+1}: ` : ''}{message}</li>)}</ul></div>}
+          {historyOpen && <PurchaseHistory purchaseId={currentPurchase.id} />}
           <PurchaseDocument
             key={currentPurchase.id || 'current-fpp'}
             data={currentPurchase}
-            onChange={setCurrentPurchase}
+            onChange={handleDocumentChange}
+            validationErrors={validationErrors}
             onSave={handleSavePurchase}
             onGenerateNomor={handleGenerateNomor}
             saveNotice={saveNotice}
@@ -476,6 +533,13 @@ export default function MainPage() {
           />
           </div>
           <div className="no-print min-w-0 space-y-4">
+          <AccessPanel />
+          {!!drafts.length && <details className="rounded-xl border border-slate-200 dark:border-zinc-800 p-3 text-xs"><summary className="cursor-pointer font-semibold">Draft perangkat ini ({drafts.length})</summary><div className="space-y-2 mt-3">{drafts.map(draft=><button key={draft.purchase.id} type="button" className="block w-full text-left rounded border border-slate-200 dark:border-zinc-800 p-2" onClick={()=>{
+            if(!confirmDiscard())return;
+            setCurrentPurchase(draft.purchase);
+            setSavedFingerprint(fingerprint(purchases.find(p=>p.id===draft.purchase.id) || blankBaseline(draft.purchase)));
+            setValidationErrors({});setDraftStatus('Draft lokal dipulihkan');
+          }}>{draft.purchase.nomor} • {draft.purchase.items[0]?.namaBarang || 'Belum diisi'}<span className="block text-slate-500">{new Date(draft.savedAt).toLocaleString('id-ID')}</span></button>)}</div></details>}
           <PurchaseSummary purchases={purchases} />
             <PurchaseList
               purchases={purchases}
@@ -483,6 +547,9 @@ export default function MainPage() {
               onSelectForPreview={handleSelectForPreview}
               onAddNew={handleAddNewFPP}
               onDelete={handleDeletePurchase}
+              onDuplicate={handleDuplicatePurchase}
+              canEdit={access.canEdit}
+              canDelete={access.canDelete}
               onRefresh={() => loadData()}
             />
           </div>
@@ -502,3 +569,5 @@ export default function MainPage() {
     </div>
   );
 }
+
+export default function Page(){return <AuthGate><MainPage/></AuthGate>;}

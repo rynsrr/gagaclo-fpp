@@ -1,6 +1,8 @@
 import { PurchaseRequisition, PurchaseItem, PurchaseJenis } from '@/types/purchase';
 import { supabase, isSupabaseConfigured } from './supabase';
 
+import { storageScope } from './storageScope';
+
 const STORAGE_KEY = 'gagaclo_purchase_requisitions_v2';
 
 // Sample default requisition matching PT Gagaclo operations
@@ -122,7 +124,7 @@ function mapToDb(item: PurchaseRequisition): any {
 export function getLocalPurchases(): PurchaseRequisition[] {
   if (typeof window === 'undefined') return [];
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageScope() === 'legacy' ? STORAGE_KEY : `${STORAGE_KEY}:${storageScope()}`);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     // Ignore the automatically seeded demo; retain saved user documents.
@@ -138,7 +140,7 @@ export function getLocalPurchases(): PurchaseRequisition[] {
 export function saveLocalPurchases(list: PurchaseRequisition[]): boolean {
   if (typeof window === 'undefined') return false;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    localStorage.setItem(storageScope() === 'legacy' ? STORAGE_KEY : `${STORAGE_KEY}:${storageScope()}`, JSON.stringify(list));
     return true;
   } catch (err) {
     console.error('Failed to write to localStorage:', err);
@@ -240,13 +242,6 @@ export async function savePurchase(item: PurchaseRequisition): Promise<{ success
         .from('purchase_requisitions')
         .upsert(dbPayload, { onConflict: 'id' });
 
-      if (error && error.message && error.message.includes('photos')) {
-        const { photos, ...rest } = dbPayload;
-        const retryRes = await supabase
-          .from('purchase_requisitions')
-          .upsert(rest, { onConflict: 'id' });
-        error = retryRes.error;
-      }
 
       if (!error) {
         saveLocalPurchases(getLocalPurchases().map((cached) => cached.id === toSave.id && cached.updatedAt === toSave.updatedAt ? { ...cached, pendingSync: false } : cached));

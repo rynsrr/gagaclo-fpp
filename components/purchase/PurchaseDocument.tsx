@@ -2,6 +2,8 @@
 
 import { uploadAttachment } from '@/lib/attachmentUpload';
 import FittedSignatureName from './FittedSignatureName';
+import AttachmentPanel from './AttachmentPanel';
+import { splitQuantity, updateQuantity, ValidationErrors } from '@/lib/purchaseEditing';
 
 import React, { useRef, useState, useEffect } from 'react';
 import { PurchaseRequisition, PurchaseItem, PurchaseJenis, PurchasePhoto } from '@/types/purchase';
@@ -28,6 +30,7 @@ interface PurchaseDocumentProps {
   saveNotice?: string | null;
   hidePrintControls?: boolean;
   isEditable?: boolean;
+  validationErrors?: ValidationErrors;
 }
 
 export default function PurchaseDocument({
@@ -38,6 +41,7 @@ export default function PurchaseDocument({
   saveNotice = null,
   hidePrintControls = false,
   isEditable = true,
+  validationErrors = {},
 }: PurchaseDocumentProps) {
   const {
     nomor = '',
@@ -63,6 +67,14 @@ export default function PurchaseDocument({
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [pasteNotice, setPasteNotice] = useState<string | null>(null);
+
+  const errorFor = (path: string) => validationErrors[path] ? <span id={`error-${path}`} role="alert" className="no-print block text-[10px] text-red-700 mt-1">{validationErrors[path]}</span> : null;
+  const quantityChange = (index: number, qty: string, satuan: string) => {
+    if (!onChange) return;
+    const current = dataRef.current;
+    const updated = current.items.map((row, i) => i === index ? updateQuantity(row, qty, satuan) : row);
+    onChange({ ...current, items: updated, totalTaksiran: updated.reduce((sum,row) => sum + row.jumlah,0) });
+  };
 
   // Recalculate total taksiran
   const calculateTotal = (itemList: PurchaseItem[]): number => {
@@ -249,35 +261,7 @@ export default function PurchaseDocument({
   };
 
   // Clipboard Paste listener (Global capture of Ctrl+V for images)
-  useEffect(() => {
-    if (!isEditable) return;
 
-    const handlePaste = (e: ClipboardEvent) => {
-      const items = e.clipboardData?.items;
-      if (!items || items.length === 0) return;
-
-      const imageFiles: (File | Blob)[] = [];
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        if (item.type.indexOf('image') !== -1 || item.kind === 'file') {
-          const blob = item.getAsFile();
-          if (blob && (blob.type.startsWith('image/') || item.type.startsWith('image/'))) {
-            imageFiles.push(blob);
-          }
-        }
-      }
-
-      // If an image was pasted, intercept and add to Lampiran
-      if (imageFiles.length > 0) {
-        e.preventDefault();
-        e.stopPropagation();
-        processAndAddFiles(imageFiles);
-      }
-    };
-
-    window.addEventListener('paste', handlePaste, true);
-    return () => window.removeEventListener('paste', handlePaste, true);
-  }, [isEditable]);
 
   // Click handler for clipboard paste button
   const handlePasteFromClipboard = async () => {
@@ -320,10 +304,11 @@ export default function PurchaseDocument({
   const totalDisplayRows = Math.max(items.length, 3);
   const fillerRowsCount = Math.max(0, totalDisplayRows - items.length);
 
-  const photoCount = photos?.length || 0;
+  const photoCount = photos.filter(photo => !photo.type || photo.type.startsWith('image/')).length;
 
   return (
     <div className="flex flex-col items-center w-full">
+      <datalist id="fpp-unit-options">{['Pcs','Unit','Set','Box','Roll','Kg','Meter','Liter'].map(unit => <option key={unit} value={unit} />)}</datalist>
       {/* Top Action Toolbar (Hidden during print) */}
       {!hidePrintControls && (saveNotice || pasteNotice) && (
         <div className="no-print w-full max-w-[210mm] mb-4 space-y-2">
@@ -348,7 +333,7 @@ export default function PurchaseDocument({
       {/* Actual Physical Paper Document - Exactly 1 Page A4 */}
       <div
         id="printable-fpp-document"
-        className="printable-document bg-white text-black w-full max-w-[210mm] min-h-[297mm] p-[10mm] shadow-2xl print:shadow-none print:p-0 print:m-0 print:w-full print:max-w-none text-[11px] font-sans border border-gray-300 print:border-none select-text box-border flex flex-col justify-between print:min-h-0 print:h-auto print:max-h-[280mm] print:overflow-hidden"
+        className="printable-document bg-white text-black w-full max-w-[210mm] min-h-0 p-[10mm] shadow-2xl print:shadow-none print:p-0 print:m-0 print:w-full print:max-w-none text-[11px] font-sans border border-gray-300 print:border-none select-text box-border flex flex-col gap-3 print:gap-0 print:justify-between print:min-h-0 print:h-auto print:max-h-[280mm] print:overflow-hidden"
         style={{ fontFamily: '"Arial", "Helvetica", sans-serif' }}
       >
         {/* ========================================================
@@ -391,6 +376,8 @@ export default function PurchaseDocument({
                 <div className="flex items-center space-x-1 tracking-wide italic">
                   {/* Rutin */}
                   <span
+                    role="radio" aria-checked={jenis === 'Rutin'} aria-invalid={!!validationErrors.jenis} tabIndex={isEditable ? 0 : -1}
+                    onKeyDown={e=>{if(isEditable && (e.key==='Enter'||e.key===' ')){e.preventDefault();updateField('jenis','Rutin');}}}
                     onClick={() => isEditable && updateField('jenis', 'Rutin')}
                     className={`px-1.5 py-0.5 ${
                       isEditable ? 'cursor-pointer hover:bg-black/5 select-none' : ''
@@ -407,6 +394,8 @@ export default function PurchaseDocument({
 
                   {/* Non Rutin */}
                   <span
+                    role="radio" aria-checked={jenis === 'Non Rutin'} aria-invalid={!!validationErrors.jenis} tabIndex={isEditable ? 0 : -1}
+                    onKeyDown={e=>{if(isEditable && (e.key==='Enter'||e.key===' ')){e.preventDefault();updateField('jenis','Non Rutin');}}}
                     onClick={() => isEditable && updateField('jenis', 'Non Rutin')}
                     className={`px-1.5 py-0.5 ${
                       isEditable ? 'cursor-pointer hover:bg-black/5 select-none' : ''
@@ -423,6 +412,8 @@ export default function PurchaseDocument({
 
                   {/* Segera */}
                   <span
+                    role="radio" aria-checked={jenis === 'Segera'} aria-invalid={!!validationErrors.jenis} tabIndex={isEditable ? 0 : -1}
+                    onKeyDown={e=>{if(isEditable && (e.key==='Enter'||e.key===' ')){e.preventDefault();updateField('jenis','Segera');}}}
                     onClick={() => isEditable && updateField('jenis', 'Segera')}
                     className={`px-1.5 py-0.5 ${
                       isEditable ? 'cursor-pointer hover:bg-black/5 select-none' : ''
@@ -454,6 +445,7 @@ export default function PurchaseDocument({
                       type="text"
                       value={nomor}
                       onChange={(e) => updateField('nomor', e.target.value)}
+                      aria-label="Nomor FPP" aria-invalid={!!validationErrors.nomor}
                       placeholder="ROYAN-0001"
                       className="font-mono font-medium bg-transparent hover:bg-blue-50/50 focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 focus:outline-none px-1 py-0 w-28 text-[10.5px] border-b border-dashed border-gray-300 hover:border-black transition print:hidden"
                     />
@@ -484,6 +476,7 @@ export default function PurchaseDocument({
                   <div className="flex items-center space-x-1 flex-1">
                     <input
                       type="date"
+                      aria-label="Tanggal FPP" aria-invalid={!!validationErrors.tanggal}
                       value={tanggal}
                       onChange={(e) => updateField('tanggal', e.target.value)}
                       className="bg-transparent hover:bg-blue-50/50 focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 focus:outline-none px-1 py-0 text-[10.5px] border-b border-dashed border-gray-300 hover:border-black transition print:hidden"
@@ -545,12 +538,16 @@ export default function PurchaseDocument({
                               pendingItemFocus.current = dataRef.current.items.length;
                               handleAddItemRow();
                             }}
+                            aria-label={`Nama barang baris ${index + 1}`}
+                            aria-invalid={!!validationErrors[`items.${index}.namaBarang`]}
+                            aria-describedby={validationErrors[`items.${index}.namaBarang`] ? `error-items.${index}.namaBarang` : undefined}
                             value={item.namaBarang}
                             onChange={(e) => handleItemChange(index, 'namaBarang', e.target.value)}
                             placeholder="Ketik nama barang..."
                             className="w-full bg-transparent hover:bg-blue-50/40 focus:bg-blue-50/80 focus:ring-1 focus:ring-blue-400 focus:outline-none px-1 py-0.5 text-[10.5px] rounded transition print:hidden placeholder:text-gray-400 placeholder:italic"
                           />
                           <span className="hidden print:inline-block break-words">{item.namaBarang}</span>
+                          {errorFor(`items.${index}.namaBarang`)}
                         </>
                       ) : (
                         <span className="break-words">{item.namaBarang}</span>
@@ -561,19 +558,19 @@ export default function PurchaseDocument({
                     <td className="border-r border-black px-1 py-0.5 text-center font-normal">
                       {isEditable ? (
                         <>
-                          <input
-                            type="text"
-                            onKeyDown={(event) => {
-                              if (event.key !== 'Enter' || event.nativeEvent.isComposing || event.repeat || !onChange) return;
-                              event.preventDefault();
-                              pendingItemFocus.current = dataRef.current.items.length;
-                              handleAddItemRow();
-                            }}
-                            value={item.banyaknya}
-                            onChange={(e) => handleItemChange(index, 'banyaknya', e.target.value)}
-                            placeholder="e.g. 10 Pcs"
-                            className="w-full text-center bg-transparent hover:bg-blue-50/40 focus:bg-blue-50/80 focus:ring-1 focus:ring-blue-400 focus:outline-none px-1 py-0.5 text-[10.5px] rounded transition print:hidden placeholder:text-gray-400 placeholder:italic"
-                          />
+                          <div className="flex items-start gap-0.5 print:hidden">
+                            <input type="number" min="0" step="any" value={splitQuantity(item).qty ?? ''}
+                              aria-label={`Qty baris ${index + 1}`} aria-invalid={!!validationErrors[`items.${index}.qty`]}
+                              onChange={e => quantityChange(index,e.target.value,splitQuantity(item).satuan)}
+                              onKeyDown={event => handleNextItemOnEnter(event,index)} placeholder="Qty"
+                              className="w-[48%] min-w-0 text-center bg-transparent focus:bg-blue-50 focus:outline-none rounded px-0.5 py-1 text-[10px]" />
+                            <input type="text" list="fpp-unit-options" value={splitQuantity(item).satuan}
+                              aria-label={`Satuan barang baris ${index + 1}`} aria-invalid={!!validationErrors[`items.${index}.satuan`]}
+                              onChange={e => quantityChange(index,String(splitQuantity(item).qty ?? ''),e.target.value)}
+                              onKeyDown={event => handleNextItemOnEnter(event,index)} placeholder="Pcs"
+                              className="w-[52%] min-w-0 text-center bg-transparent focus:bg-blue-50 focus:outline-none rounded px-0.5 py-1 text-[10px]" />
+                          </div>
+                          {errorFor(`items.${index}.qty`)}{errorFor(`items.${index}.satuan`)}
                           <span className="hidden print:inline-block whitespace-nowrap">
                             {item.banyaknya || (item.qty ? `${item.qty} ${item.satuan || ''}` : '')}
                           </span>
@@ -591,6 +588,7 @@ export default function PurchaseDocument({
                         <>
                           <input
                             type="number"
+                            aria-label={`Harga satuan baris ${index + 1}`} min="0" aria-invalid={!!validationErrors[`items.${index}.hargaSatuan`]}
                             value={item.hargaSatuan === 0 ? '' : item.hargaSatuan}
                             onKeyDown={(event) => handleNextItemOnEnter(event, index)}
                             onChange={(e) =>
@@ -616,6 +614,7 @@ export default function PurchaseDocument({
                         <>
                           <input
                             type="number"
+                            aria-label={`Jumlah harga baris ${index + 1}`} min="0" aria-invalid={!!validationErrors[`items.${index}.jumlah`]}
                             value={item.jumlah === 0 ? '' : item.jumlah}
                             onKeyDown={(event) => handleNextItemOnEnter(event, index)}
                             onChange={(e) =>
@@ -666,7 +665,7 @@ export default function PurchaseDocument({
 
                 {/* Blank filler rows to maintain clean half-page proportion */}
                 {Array.from({ length: fillerRowsCount }).map((_, fIdx) => (
-                  <tr key={`filler-${fIdx}`} className="h-6">
+                  <tr key={`filler-${fIdx}`} className="hidden print:table-row h-6">
                     <td className="border-r border-black px-1 py-0.5">&nbsp;</td>
                     <td className="border-r border-black px-1.5 py-0.5">&nbsp;</td>
                     <td className="border-r border-black px-1 py-0.5">&nbsp;</td>
@@ -819,6 +818,7 @@ export default function PurchaseDocument({
                     <>
                       <input
                         type="text"
+                        aria-label="Nama pemohon" aria-invalid={!!validationErrors.dimintaOleh}
                         value={dimintaOleh}
                         onChange={(e) => updateField('dimintaOleh', e.target.value)}
                         placeholder="Royan"
@@ -891,12 +891,14 @@ export default function PurchaseDocument({
         {/* ========================================================
             BAGIAN BAWAH: LAMPIRAN (SETENGAH A4 - TETAP 1 HALAMAN)
             ======================================================== */}
-        <div className="w-full flex flex-col h-[122mm] max-h-[122mm] overflow-hidden">
+        <div className="w-full flex flex-col print:h-[122mm] print:max-h-[122mm] print:overflow-hidden">
           {/* Header Lampiran (Hanya tulis LAMPIRAN) */}
           <div className="w-full border border-black py-1 font-bold text-[12px] tracking-wider uppercase text-left bg-white flex items-center justify-between px-3 relative">
             <span className="font-bold tracking-wider text-left">LAMPIRAN</span>
           </div>
 
+          <div className="no-print"><AttachmentPanel photos={photos} isEditable={isEditable} onChange={next => updateField('photos',next)} /></div>
+          <div className="hidden print:contents">
           {/* Hidden File Input for Image Upload */}
           <input
             ref={fileInputRef}
@@ -943,7 +945,7 @@ export default function PurchaseDocument({
                       : 'grid grid-cols-3 grid-rows-2 gap-1.5 h-full'
                   }`}
                 >
-                  {photos.map((photo, pIdx) => (
+                  {photos.filter(photo => !photo.type || photo.type.startsWith('image/')).map((photo, pIdx) => (
                     <div
                       key={photo.id || pIdx}
                       className={`border border-black/30 rounded p-1 flex flex-col items-center bg-white justify-between relative group ${
@@ -1053,6 +1055,8 @@ export default function PurchaseDocument({
               </div>
             )}
           </div>
+          </div>
+          <div className="hidden print:block text-[9px]">{photos.filter(p => p.type && !p.type.startsWith('image/')).map(p => <div key={p.id}>Lampiran dokumen: {p.name || p.caption || 'PDF'}</div>)}</div>
         </div>
       </div>
     </div>

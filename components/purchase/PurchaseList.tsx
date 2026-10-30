@@ -11,6 +11,7 @@ import {
   FileText,
   AlertTriangle,
   ArrowUpDown,
+  Copy,
 } from 'lucide-react';
 
 interface PurchaseListProps {
@@ -19,6 +20,9 @@ interface PurchaseListProps {
   onSelectForPreview: (item: PurchaseRequisition) => void;
   onAddNew: () => void;
   onRefresh: () => void;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  onDuplicate?: (item: PurchaseRequisition) => void;
   onDelete?: (id: string, nomor: string) => void;
 }
 
@@ -29,6 +33,9 @@ export default function PurchaseList({
   onAddNew,
   onRefresh,
   onDelete,
+  onDuplicate,
+  canEdit=true,
+  canDelete=true,
 }: PurchaseListProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -125,7 +132,7 @@ export default function PurchaseList({
                           className="hover:text-blue-400 block w-full truncate text-left"
                           title="Klik untuk pratinjau cetak A4"
                         >
-                          <span>{item.nomor || 'Draft'}</span>
+                          <span>{item.nomor || 'Draft'}</span>{item.pendingSync && <span className="block text-[9px] text-amber-600">Belum tersinkron</span>}
                         </button>
                       </td>
 
@@ -165,6 +172,7 @@ export default function PurchaseList({
                         <div className="flex items-center justify-center gap-0.5">
                           {/* Edit */}
                           <button
+                            disabled={!canEdit}
                             onClick={() => onSelectForEdit(item)}
                             className="p-1 text-zinc-400 hover:text-blue-400 hover:bg-blue-950/30 rounded-lg transition"
                             title="Edit Formulir"
@@ -172,10 +180,11 @@ export default function PurchaseList({
                             <Edit3 className="w-4 h-4" />
                           </button>
 
+                          {canEdit && onDuplicate && <button type="button" onClick={()=>onDuplicate(item)} className="p-1 text-zinc-400 hover:text-blue-500 rounded-lg" title="Duplikat FPP" aria-label={`Duplikat ${item.nomor}`}><Copy className="w-4 h-4"/></button>}
                           {/* Delete */}
                           <button
                             onClick={() => handleDelete(item.id, item.nomor)}
-                            disabled={deletingId === item.id}
+                            disabled={!canDelete || deletingId === item.id}
                             className="p-1 text-zinc-400 hover:text-red-400 hover:bg-red-950/30 rounded-lg transition disabled:opacity-50"
                             title="Hapus Formulir"
                           >

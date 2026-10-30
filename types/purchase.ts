@@ -18,6 +18,9 @@ export interface PurchasePhoto {
   id: string;
   url: string;
   caption?: string;
+  name?: string;
+  type?: string;
+  size?: number;
 }
 
 export interface PurchaseRequisition {

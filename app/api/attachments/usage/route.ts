@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { unstable_cache } from 'next/cache';
 import { ListObjectsV2Command } from '@aws-sdk/client-s3';
+import { allowed } from '@/lib/serverAccess';
 import { r2Client, r2Ready } from '@/lib/r2';
 
 export const runtime = 'nodejs';
@@ -23,7 +24,8 @@ const readUsage = unstable_cache(async (bucket: string) => {
   return { bytes, objects, updatedAt: new Date().toISOString() };
 }, ['r2-storage-usage'], { revalidate: 300, tags: ['r2-storage-usage'] });
 
-export async function GET() {
+export async function GET(request:NextRequest) {
+  if(!await allowed(request))return new NextResponse(null,{status:401});
   const headers = { 'Cache-Control': 'no-store' };
   if (!r2Ready()) return NextResponse.json({ enabled: false }, { headers });
   try {
