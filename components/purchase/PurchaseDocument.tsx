@@ -1025,7 +1025,7 @@ export default function PurchaseDocument({
               <div className="w-full h-full flex flex-col items-center justify-center">
                 {isEditable ? (
                   <div
-                    onClick={handlePasteFromClipboard}
+                    onClick={() => fileInputRef.current?.click()}
                     className="no-print w-full max-w-lg p-5 border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-blue-50/30 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition text-center group"
                   >
                     <div className="flex items-center space-x-2 mb-2">
