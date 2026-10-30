@@ -1,5 +1,7 @@
 'use client';
 
+import { uploadAttachment } from '@/lib/attachmentUpload';
+
 import React, { useRef, useState, useEffect } from 'react';
 import { PurchaseRequisition, PurchaseItem, PurchaseJenis, PurchasePhoto } from '@/types/purchase';
 import { formatRupiah, formatShortDate, calculateItemAmount } from '@/lib/purchaseService';
@@ -190,11 +192,12 @@ export default function PurchaseDocument({
         }
         newPhotos.push({
           id: 'photo-' + Date.now() + '-' + (currentPhotos.length + i + 1),
-          url: compressedBase64,
+          url: await uploadAttachment(compressedBase64),
           caption,
         });
       } catch (err) {
-        console.error('Failed to compress image:', err);
+        console.error('Failed to upload image:', err);
+        alert(err instanceof Error ? err.message : 'Unggah lampiran gagal.');
       }
     }
 

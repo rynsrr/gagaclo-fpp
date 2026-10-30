@@ -32,9 +32,11 @@ export default function PasswordModal({
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.trim().toLowerCase() === 'takbir') {
+    try {
+      const response = await fetch('/api/edit-session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
+      if (!response.ok) throw new Error((await response.json()).error || 'Akses mode edit gagal.');
       try {
         sessionStorage.setItem('fpp_edit_unlocked', 'true');
       } catch {}
@@ -42,8 +44,8 @@ export default function PasswordModal({
       setPassword('');
       onSuccess();
       onClose();
-    } else {
-      setError('Password salah! Silakan coba lagi.');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Akses mode edit gagal.');
       inputRef.current?.focus();
     }
   };

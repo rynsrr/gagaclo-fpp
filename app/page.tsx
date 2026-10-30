@@ -94,6 +94,7 @@ export default function MainPage() {
   };
 
   const handleLockEditMode = () => {
+    void fetch('/api/edit-session', { method: 'DELETE' });
     setIsEditUnlocked(false);
     try {
       sessionStorage.removeItem('fpp_edit_unlocked');

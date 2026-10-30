@@ -1,5 +1,7 @@
 'use client';
 
+import { uploadAttachment } from '@/lib/attachmentUpload';
+
 import React, { useState } from 'react';
 import { PurchaseRequisition, PurchaseItem, PurchaseJenis, DEFAULT_PURCHASE_REQUISITION } from '@/types/purchase';
 import {
@@ -170,11 +172,12 @@ export default function PurchaseFormEditor({
           const dataUrl = await compressImage(file);
           newPhotos.push({
             id: 'photo-' + Date.now() + '-' + (newPhotos.length + 1),
-            url: dataUrl,
+            url: await uploadAttachment(dataUrl),
             caption: file.name.replace(/\.[^/.]+$/, ''),
           });
         } catch (err) {
-          console.error('Failed to read image:', err);
+          console.error('Failed to upload image:', err);
+          alert(err instanceof Error ? err.message : 'Unggah lampiran gagal.');
         }
       }
     }
