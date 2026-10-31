@@ -30,7 +30,7 @@ export default function RootLayout({
     <html
       lang="id"
       suppressHydrationWarning
-      className={`dark ${greatVibes.variable} ${dancingScript.variable}`}
+      className={`${greatVibes.variable} ${dancingScript.variable}`}
     >
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -45,7 +45,7 @@ export default function RootLayout({
               (function() {
                 try {
                   var saved = localStorage.getItem('gagaclo_theme');
-                  var isDark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+                  var isDark = saved === 'dark';
                   if (isDark) {
                     document.documentElement.classList.add('dark');
                   } else {
