@@ -133,7 +133,7 @@ export default function MainPage() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [passwordModalTab, setPasswordModalTab] = useState<'LOGIN' | 'MANAGE'>('LOGIN');
+  const [passwordModalTab, setPasswordModalTab] = useState<'SELECT' | 'MANAGE'>('SELECT');
   const [userVersion, setUserVersion] = useState(0);
 
   useEffect(() => {
@@ -592,17 +592,19 @@ export default function MainPage() {
 
             {/* Right Status & Fast Action */}
             <div className="flex flex-wrap items-center justify-end gap-2">
-              {/* Status Akun Editor */}
+              {/* Status Akun Editor (Pilih User Langsung) */}
               {!currentUser ? (
                 <button
                   type="button"
-                  onClick={() => setIsPasswordModalOpen(true)}
-                  className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 transition shadow-sm"
-                  title="Dokumen dalam Mode Hanya Baca. Klik untuk masuk sebagai editor"
+                  onClick={() => {
+                    setPasswordModalTab('SELECT');
+                    setIsPasswordModalOpen(true);
+                  }}
+                  className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/30 hover:bg-blue-500/20 transition shadow-sm"
+                  title="Klik untuk memilih akun Anda"
                 >
-                  <Lock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                  <span className="hidden sm:inline">Mode Lihat</span>
-                  <span className="sm:hidden">Masuk</span>
+                  <UserCheck className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                  <span>Pilih Akun</span>
                 </button>
               ) : (
                 <div className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 shadow-sm">
@@ -611,18 +613,29 @@ export default function MainPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      setPasswordModalTab('MANAGE');
+                      setPasswordModalTab('SELECT');
                       setIsPasswordModalOpen(true);
                     }}
                     className="ml-1 text-[10px] text-blue-600 dark:text-blue-400 hover:underline"
+                    title="Ganti ke akun lain"
+                  >
+                    Ganti
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPasswordModalTab('MANAGE');
+                      setIsPasswordModalOpen(true);
+                    }}
+                    className="ml-0.5 text-[10px] text-zinc-500 dark:text-zinc-400 hover:underline"
                     title="Kelola akun (tambah/hapus user)"
                   >
-                    Kelola User
+                    Kelola
                   </button>
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="ml-1 text-[10px] text-zinc-500 hover:text-red-500 hover:underline"
+                    className="ml-0.5 text-[10px] text-red-500 hover:underline"
                     title="Keluar mode edit"
                   >
                     Keluar
@@ -701,17 +714,20 @@ export default function MainPage() {
           <div className="w-full grid grid-cols-1 xl:grid-cols-[minmax(0,210mm)_minmax(0,1fr)] gap-6 items-start print:block">
             <div className="w-full max-w-[210mm] mx-auto space-y-3">
               {!currentUser ? (
-                <div className="no-print flex items-center justify-between p-2.5 rounded-xl border border-amber-200 dark:border-amber-900/40 bg-amber-50/80 dark:bg-amber-950/20 text-xs text-amber-800 dark:text-amber-300 shadow-sm">
+                <div className="no-print flex items-center justify-between p-2.5 rounded-xl border border-blue-200 dark:border-blue-900/40 bg-blue-50/80 dark:bg-blue-950/20 text-xs text-blue-900 dark:text-blue-300 shadow-sm">
                   <div className="flex items-center gap-2">
-                    <Lock className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span>Dokumen dalam <strong>Mode Lihat</strong>. Masuk dengan akun editor untuk mengedit.</span>
+                    <UserCheck className="w-4 h-4 text-blue-600 shrink-0" />
+                    <span>Dokumen dalam <strong>Mode Lihat</strong>. Pilih akun editor untuk mulai mengedit.</span>
                   </div>
                   <button
                     type="button"
-                    onClick={() => setIsPasswordModalOpen(true)}
-                    className="px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs transition active:scale-95 shrink-0"
+                    onClick={() => {
+                      setPasswordModalTab('SELECT');
+                      setIsPasswordModalOpen(true);
+                    }}
+                    className="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs transition active:scale-95 shrink-0"
                   >
-                    Masuk Edit
+                    Pilih Akun
                   </button>
                 </div>
               ) : !checkIsOwner(currentPurchase, currentUser) ? (

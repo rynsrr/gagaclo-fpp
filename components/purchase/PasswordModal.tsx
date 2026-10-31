@@ -2,10 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Lock,
   UserCheck,
-  Eye,
-  EyeOff,
   X,
   UserPlus,
   Trash2,
@@ -13,6 +10,7 @@ import {
   CheckCircle2,
   AlertCircle,
   ArrowLeft,
+  Sparkles,
 } from 'lucide-react';
 import {
   getUsers,
@@ -25,7 +23,7 @@ interface PasswordModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (username: string) => void;
-  initialTab?: 'LOGIN' | 'MANAGE';
+  initialTab?: 'SELECT' | 'MANAGE';
   onLogout?: () => void;
 }
 
@@ -35,28 +33,27 @@ export default function PasswordModal({
   isOpen,
   onClose,
   onSuccess,
-  initialTab = 'LOGIN',
+  initialTab = 'SELECT',
   onLogout,
 }: PasswordModalProps) {
-  const [activeTab, setActiveTab] = useState<'LOGIN' | 'MANAGE'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'SELECT' | 'MANAGE'>(initialTab);
   const [userList, setUserList] = useState<string[]>(() => getUsers());
-
-  // Login form state
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
+  const [activeUser, setActiveUser] = useState<string | null>(null);
 
   // Manage form state
   const [newUserName, setNewUserName] = useState('');
   const [manageNotice, setManageNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  const usernameInputRef = useRef<HTMLInputElement>(null);
-  const passwordInputRef = useRef<HTMLInputElement>(null);
   const newUserInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const refresh = () => setUserList(getUsers());
+    const refresh = () => {
+      setUserList(getUsers());
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('fpp_edit_user') || sessionStorage.getItem('fpp_edit_user');
+        setActiveUser(saved);
+      }
+    };
     refresh();
     if (typeof window !== 'undefined') {
       window.addEventListener('fpp-users-updated', refresh);
@@ -67,67 +64,31 @@ export default function PasswordModal({
   useEffect(() => {
     if (isOpen) {
       setActiveTab(initialTab);
-      setUsername('');
-      setPassword('');
-      setLoginError(null);
       setManageNotice(null);
       setNewUserName('');
-      setShowPassword(false);
       setUserList(getUsers());
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('fpp_edit_user') || sessionStorage.getItem('fpp_edit_user');
+        setActiveUser(saved);
+      }
 
-      setTimeout(() => {
-        if (initialTab === 'LOGIN') {
-          usernameInputRef.current?.focus();
-        } else {
-          newUserInputRef.current?.focus();
-        }
-      }, 60);
+      if (initialTab === 'MANAGE') {
+        setTimeout(() => newUserInputRef.current?.focus(), 60);
+      }
     }
   }, [isOpen, initialTab]);
 
   if (!isOpen) return null;
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const cleanUser = username.trim().toLowerCase();
-    const cleanPass = password.trim().toLowerCase();
-
-    if (!cleanUser) {
-      setLoginError('Pilih atau ketik nama user.');
-      usernameInputRef.current?.focus();
-      return;
-    }
-
-    const currentUsers = getUsers();
-    if (!currentUsers.includes(cleanUser)) {
-      setLoginError(`User "${cleanUser}" belum terdaftar. Tambahkan di tab Kelola User.`);
-      usernameInputRef.current?.focus();
-      return;
-    }
-
-    // Password sama dengan nama user (atau 'admin' / 'gagaclo')
-    if (cleanPass !== cleanUser && cleanPass !== 'admin' && cleanPass !== 'gagaclo') {
-      setLoginError('Password salah! Password sama dengan nama user.');
-      passwordInputRef.current?.focus();
-      return;
-    }
-
+  // Langsung pilih user dengan 1 klik (tanpa password)
+  const handleSelectUser = (cleanUser: string) => {
     try {
       localStorage.setItem('fpp_edit_user', cleanUser);
       sessionStorage.setItem('fpp_edit_user', cleanUser);
     } catch {}
 
-    setLoginError(null);
     onSuccess(cleanUser);
     onClose();
-  };
-
-  const handleSelectUserChip = (user: string) => {
-    setUsername(user);
-    setLoginError(null);
-    setTimeout(() => {
-      passwordInputRef.current?.focus();
-    }, 50);
   };
 
   const handleAddUser = (e: React.FormEvent) => {
@@ -140,7 +101,7 @@ export default function PasswordModal({
       setNewUserName('');
       setManageNotice({
         type: 'success',
-        message: `✓ User "${added}" berhasil ditambahkan! Password sama dengan nama: "${added}".`,
+        message: `✓ User "${formatUserName(added)}" berhasil ditambahkan! Anda dapat langsung memilihnya.`,
       });
       setTimeout(() => newUserInputRef.current?.focus(), 50);
     } else {
@@ -157,26 +118,19 @@ export default function PasswordModal({
       return;
     }
 
-    const promptText = `Apakah Anda yakin ingin menghapus user "${formatUserName(userToDelete)}"?\nAkun ini tidak akan bisa login lagi untuk mengedit FPP.`;
+    const promptText = `Apakah Anda yakin ingin menghapus user "${formatUserName(userToDelete)}"?\nAkun ini tidak akan muncul lagi di daftar editor.`;
     if (confirm(promptText)) {
       const result = removeUser(userToDelete);
       if (result.success) {
         setUserList(result.users);
         setManageNotice({
           type: 'success',
-          message: `✓ User "${userToDelete}" berhasil dihapus.`,
+          message: `✓ User "${formatUserName(userToDelete)}" berhasil dihapus.`,
         });
 
-        // If currently selected or active user was deleted
-        if (username === userToDelete) {
-          setUsername('');
-          setPassword('');
-        }
-        if (onLogout && typeof window !== 'undefined') {
-          const active = localStorage.getItem('fpp_edit_user');
-          if (active === userToDelete) {
-            onLogout();
-          }
+        if (activeUser === userToDelete) {
+          setActiveUser(null);
+          if (onLogout) onLogout();
         }
       } else {
         setManageNotice({
@@ -193,7 +147,7 @@ export default function PasswordModal({
         className="w-full max-w-md rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-2xl text-zinc-900 dark:text-white space-y-4 relative"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="password-modal-title"
+        aria-labelledby="user-modal-title"
       >
         {/* Close Button */}
         <button
@@ -211,23 +165,22 @@ export default function PasswordModal({
             <button
               type="button"
               onClick={() => {
-                setActiveTab('LOGIN');
+                setActiveTab('SELECT');
                 setManageNotice(null);
               }}
               className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
-                activeTab === 'LOGIN'
-                  ? 'bg-emerald-600 text-white shadow-sm'
+                activeTab === 'SELECT'
+                  ? 'bg-blue-600 text-white shadow-sm'
                   : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800'
               }`}
             >
-              <Lock className="w-3.5 h-3.5" />
-              <span>Masuk Editor</span>
+              <UserCheck className="w-3.5 h-3.5" />
+              <span>Pilih Akun ({userList.length})</span>
             </button>
             <button
               type="button"
               onClick={() => {
                 setActiveTab('MANAGE');
-                setLoginError(null);
                 setTimeout(() => newUserInputRef.current?.focus(), 50);
               }}
               className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
@@ -237,159 +190,98 @@ export default function PasswordModal({
               }`}
             >
               <Users className="w-3.5 h-3.5" />
-              <span>Kelola User ({userList.length})</span>
+              <span>Kelola User</span>
             </button>
           </div>
         </div>
 
-        {/* TAB 1: LOGIN */}
-        {activeTab === 'LOGIN' && (
+        {/* TAB 1: PILIH AKUN (1-KLIK LANGSUNG MASUK, TANPA PASSWORD) */}
+        {activeTab === 'SELECT' && (
           <div className="space-y-4">
             <div>
-              <h2 id="password-modal-title" className="text-base font-semibold">
-                Masuk Akun Editor
+              <h2 id="user-modal-title" className="text-base font-semibold flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                <span>Pilih Akun Anda</span>
               </h2>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                Pilih atau ketik akun Anda untuk mengedit dokumen FPP
+                Klik salah satu nama di bawah untuk langsung mengedit dokumen FPP. Tidak memerlukan password.
               </p>
             </div>
 
-            {/* Quick User Chips */}
-            <div>
-              <span className="block text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mb-1.5">
-                Pilih Cepat Akun:
-              </span>
-              <div className="flex flex-wrap gap-1.5 items-center">
-                {userList.map((user) => (
+            {/* Grid Kartu User 1-Klik */}
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 max-h-60 overflow-y-auto pr-1">
+              {userList.map((user) => {
+                const isCurrent = activeUser === user;
+                return (
                   <button
                     key={user}
                     type="button"
-                    onClick={() => handleSelectUserChip(user)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-medium capitalize transition ${
-                      username.toLowerCase() === user
-                        ? 'bg-emerald-600 text-white shadow-sm'
-                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                    onClick={() => handleSelectUser(user)}
+                    className={`flex items-center gap-3 p-3 rounded-xl border text-left transition active:scale-95 group ${
+                      isCurrent
+                        ? 'bg-blue-50/80 dark:bg-blue-950/40 border-blue-500 text-blue-900 dark:text-blue-100 shadow-sm'
+                        : 'bg-zinc-50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700/80 hover:bg-blue-50/50 dark:hover:bg-zinc-800 hover:border-blue-300 dark:hover:border-zinc-600'
                     }`}
                   >
-                    {user}
+                    <div
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm uppercase shrink-0 transition ${
+                        isCurrent
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 group-hover:bg-blue-500 group-hover:text-white'
+                      }`}
+                    >
+                      {user.charAt(0)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-semibold capitalize truncate">
+                        {user}
+                      </div>
+                      <div className="text-[10px] text-zinc-500 dark:text-zinc-400">
+                        {isCurrent ? 'Sedang Aktif' : 'Klik untuk masuk'}
+                      </div>
+                    </div>
                   </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveTab('MANAGE');
-                    setTimeout(() => newUserInputRef.current?.focus(), 50);
-                  }}
-                  className="px-2 py-1 rounded-lg text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-dashed border-blue-400/50 flex items-center gap-1 transition"
-                  title="Tambah akun user baru"
-                >
-                  <UserPlus className="w-3 h-3" />
-                  <span>Tambah User</span>
-                </button>
-              </div>
+                );
+              })}
+
+              {/* Tombol Tambah User Cepat */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('MANAGE');
+                  setTimeout(() => newUserInputRef.current?.focus(), 50);
+                }}
+                className="flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-400 transition text-xs font-medium"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>+ Tambah User</span>
+              </button>
             </div>
 
-            {/* Login Form */}
-            <form onSubmit={handleLoginSubmit} className="space-y-3 pt-1">
-              <div>
-                <label
-                  htmlFor="edit-username-input"
-                  className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1"
-                >
-                  Nama User
-                </label>
-                <input
-                  ref={usernameInputRef}
-                  id="edit-username-input"
-                  type="text"
-                  value={username}
-                  onChange={(e) => {
-                    setUsername(e.target.value);
-                    if (loginError) setLoginError(null);
-                  }}
-                  placeholder="Ketik nama user..."
-                  required
-                  className="w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/60 px-3.5 py-2.5 text-sm text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition lowercase"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="edit-password-input"
-                  className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1"
-                >
-                  Password
-                </label>
-                <div className="relative">
-                  <input
-                    ref={passwordInputRef}
-                    id="edit-password-input"
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      if (loginError) setLoginError(null);
-                    }}
-                    placeholder="Password (sama dengan nama user)..."
-                    required
-                    className={`w-full rounded-xl border ${
-                      loginError
-                        ? 'border-red-500 focus:ring-red-400'
-                        : 'border-zinc-300 dark:border-zinc-700 focus:ring-emerald-500'
-                    } bg-zinc-50 dark:bg-zinc-800/60 px-3.5 py-2.5 pr-10 text-sm text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 transition`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    tabIndex={-1}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
-                    aria-label={showPassword ? 'Sembunyikan password' : 'Lihat password'}
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                {loginError && (
-                  <p className="text-xs text-red-500 font-medium mt-1.5">{loginError}</p>
-                )}
-                <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1">
-                  * Password sama dengan nama akun (contoh: user <code className="text-zinc-600 dark:text-zinc-300">royan</code> password <code className="text-zinc-600 dark:text-zinc-300">royan</code>).
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveTab('MANAGE');
-                    setTimeout(() => newUserInputRef.current?.focus(), 50);
-                  }}
-                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-medium"
-                >
-                  <Users className="w-3.5 h-3.5" />
-                  <span>Kelola User</span>
-                </button>
-                <div className="flex items-center space-x-2">
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="px-3.5 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="submit"
-                    className="inline-flex items-center space-x-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl transition active:scale-95 shadow-sm"
-                  >
-                    <UserCheck className="w-3.5 h-3.5" />
-                    <span>Masuk Mode Edit</span>
-                  </button>
-                </div>
-              </div>
-            </form>
+            <div className="flex items-center justify-between pt-2 border-t border-zinc-200 dark:border-zinc-800 text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('MANAGE');
+                  setTimeout(() => newUserInputRef.current?.focus(), 50);
+                }}
+                className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-medium"
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Kelola / Hapus User</span>
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-3.5 py-1.5 text-zinc-500 hover:text-zinc-800 dark:hover:text-white rounded-lg transition"
+              >
+                Batal
+              </button>
+            </div>
           </div>
         )}
 
-        {/* TAB 2: MANAGE USERS (ADD & DELETE) */}
+        {/* TAB 2: KELOLA USER (TAMBAH & HAPUS USER) */}
         {activeTab === 'MANAGE' && (
           <div className="space-y-4">
             <div>
@@ -398,7 +290,7 @@ export default function PasswordModal({
                 <span>Kelola Akun Editor</span>
               </h2>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                Tambah user baru atau hapus user. Password akun baru otomatis sama dengan nama user.
+                Tambah user baru atau hapus user yang sudah tidak digunakan.
               </p>
             </div>
 
@@ -432,7 +324,7 @@ export default function PasswordModal({
                   type="text"
                   value={newUserName}
                   onChange={(e) => setNewUserName(e.target.value)}
-                  placeholder="Ketik nama user (contoh: budi, intan)..."
+                  placeholder="Ketik nama (contoh: budi, intan)..."
                   required
                   className="flex-1 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/60 px-3.5 py-2 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition lowercase"
                 />
@@ -441,7 +333,7 @@ export default function PasswordModal({
                   className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs rounded-xl transition flex items-center gap-1.5 shadow-sm active:scale-95 shrink-0"
                 >
                   <UserPlus className="w-3.5 h-3.5" />
-                  <span>Tambah User</span>
+                  <span>Tambah</span>
                 </button>
               </div>
             </form>
@@ -465,21 +357,33 @@ export default function PasswordModal({
                         <div className="text-xs font-semibold capitalize text-zinc-900 dark:text-white">
                           {user}
                         </div>
-                        <div className="text-[10px] text-zinc-400">
-                          Password: <span className="font-mono">{user}</span>
-                        </div>
+                        {activeUser === user && (
+                          <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                            • Sedang aktif
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteUser(user)}
-                      disabled={userList.length <= 1}
-                      className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition disabled:opacity-30 disabled:hover:text-zinc-400"
-                      title={userList.length <= 1 ? 'Minimal 1 user' : `Hapus user ${user}`}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleSelectUser(user)}
+                        className="px-2 py-1 text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded transition"
+                        title={`Masuk sebagai ${formatUserName(user)}`}
+                      >
+                        Pilih
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteUser(user)}
+                        disabled={userList.length <= 1}
+                        className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition disabled:opacity-30 disabled:hover:text-zinc-400"
+                        title={userList.length <= 1 ? 'Minimal 1 user' : `Hapus user ${user}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -490,20 +394,20 @@ export default function PasswordModal({
               <button
                 type="button"
                 onClick={() => {
-                  setActiveTab('LOGIN');
+                  setActiveTab('SELECT');
                   setManageNotice(null);
                 }}
                 className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Kembali ke Masuk Akun</span>
+                <span>Kembali ke Pilih Akun</span>
               </button>
               <button
                 type="button"
                 onClick={onClose}
                 className="px-3.5 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition"
               >
-                Selesai
+                Tutup
               </button>
             </div>
           </div>
