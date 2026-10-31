@@ -13,9 +13,7 @@ import {
   ArrowUpDown,
   Copy,
   Eye,
-  X,
-  ChevronLeft,
-  ChevronRight,
+  X
 } from 'lucide-react';
 
 interface PurchaseListProps {
@@ -137,21 +135,7 @@ export default function PurchaseList({
     });
   }, [purchases, selectedUser, searchQuery]);
 
-  // Paginasi agar tabel tidak memanjang tanpa batas ke bawah
-  const [pageSize, setPageSize] = useState<number>(5);
-  const [currentPage, setCurrentPage] = useState<number>(1);
-
-  // Reset ke halaman 1 jika filter atau pencarian berubah
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, selectedUser]);
-
-  const totalPages = pageSize === 0 ? 1 : Math.ceil(filteredPurchases.length / pageSize) || 1;
-  const paginatedPurchases = useMemo(() => {
-    if (pageSize === 0) return filteredPurchases;
-    const start = (currentPage - 1) * pageSize;
-    return filteredPurchases.slice(start, start + pageSize);
-  }, [filteredPurchases, currentPage, pageSize]);
+  
 
   const handleDelete = async (id: string, nomor: string) => {
     if (onDelete) {
@@ -241,8 +225,7 @@ export default function PurchaseList({
             )}
           </div>
         ) : (
-          <>
-            <div className="overflow-x-auto max-h-[460px] overflow-y-auto divide-y divide-zinc-200 dark:divide-zinc-800">
+          <div className="overflow-x-auto max-h-[460px] overflow-y-auto divide-y divide-zinc-200 dark:divide-zinc-800">
             <table className="w-full table-fixed text-left text-xs text-zinc-700 dark:text-zinc-300">
               <colgroup>
                 <col style={{ width: '25%' }} />
@@ -261,7 +244,7 @@ export default function PurchaseList({
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/60">
-                {paginatedPurchases.map((item) => {
+                {filteredPurchases.map((item) => {
                   const firstItem = item.items?.[0];
                   const remainingCount = (item.items?.length || 0) - 1;
 
@@ -382,58 +365,7 @@ export default function PurchaseList({
             </table>
           </div>
 
-          {/* Bar Kontrol Paginasi & Info Jumlah */}
-          {filteredPurchases.length > 0 && (
-            <div className="flex items-center justify-between px-3 py-2 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/90 dark:bg-zinc-950/80 text-xs text-zinc-500">
-              <div className="flex items-center gap-1.5 text-[11px]">
-                <span>Tampilkan:</span>
-                <select
-                  value={pageSize}
-                  onChange={(e) => {
-                    setPageSize(Number(e.target.value));
-                    setCurrentPage(1);
-                  }}
-                  aria-label="Jumlah baris per halaman"
-                  className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-1.5 py-0.5 text-[11px] text-zinc-700 dark:text-zinc-300 font-medium cursor-pointer focus:outline-none"
-                >
-                  <option value={5}>5 per hal</option>
-                  <option value={10}>10 per hal</option>
-                  <option value={20}>20 per hal</option>
-                  <option value={0}>Semua</option>
-                </select>
-                <span className="hidden sm:inline text-zinc-400">
-                  (Total {filteredPurchases.length} FPP)
-                </span>
-              </div>
-
-              {pageSize > 0 && totalPages > 1 && (
-                <div className="flex items-center gap-1">
-                  <span className="text-[11px] mr-1">
-                    Hal {currentPage} dari {totalPages}
-                  </span>
-                  <button
-                    type="button"
-                    disabled={currentPage <= 1}
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    className="p-1 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40 disabled:hover:bg-transparent transition"
-                    title="Halaman sebelumnya"
-                  >
-                    <ChevronLeft className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    disabled={currentPage >= totalPages}
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    className="p-1 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40 disabled:hover:bg-transparent transition"
-                    title="Halaman berikutnya"
-                  >
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-          </>
+          
         )}
       </div>
     </div>
