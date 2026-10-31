@@ -171,7 +171,7 @@ export default function PurchaseList({
             onChange={(event) => setSearchQuery(event.target.value)}
             aria-label="Cari FPP"
             placeholder="Cari FPP, barang, supplier, pemohon..."
-            className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 pl-9 pr-3 py-2 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+            className="w-full rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-slate-400 dark:focus:border-zinc-600 transition"
           />
         </div>
         {/* Quick Select Dropdown */}
@@ -180,7 +180,7 @@ export default function PurchaseList({
             value={selectedUser}
             onChange={(e) => setSelectedUser(e.target.value)}
             aria-label="Filter berdasarkan akun"
-            className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-2.5 py-2 text-xs font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-400 cursor-pointer"
+            className="rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-2 text-xs font-medium text-slate-800 dark:text-zinc-200 focus:outline-none focus:border-slate-400 cursor-pointer transition"
           >
             <option value="ALL">Semua User ({totalAllPurchases !== undefined ? totalAllPurchases : purchases.length})</option>
             {availableUsers.map((user) => {
@@ -195,7 +195,7 @@ export default function PurchaseList({
         </div>
       </div>
       {/* TABLE */}
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden">
+      <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-lg overflow-hidden shadow-sm">
         {filteredPurchases.length === 0 ? (
           <div className="p-12 text-center space-y-3">
             <FileText className="w-10 h-10 text-zinc-600 mx-auto" />
@@ -235,7 +235,7 @@ export default function PurchaseList({
                 <col style={{ width: '17%' }} />
               </colgroup>
               <thead>
-                <tr className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 font-normal bg-zinc-100 dark:bg-zinc-950 sticky top-0 z-10 shadow-sm">
+                <tr className="border-b border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 font-medium bg-slate-50 dark:bg-zinc-950 sticky top-0 z-10 text-[11px]">
                   <th className="py-2 px-1.5">Nomor FPP</th>
                   <th className="py-2 px-1.5">Tanggal</th>
                   <th className="py-2 px-1.5">Jenis</th>
@@ -249,12 +249,12 @@ export default function PurchaseList({
                   const remainingCount = (item.items?.length || 0) - 1;
 
                   return (
-                    <tr key={item.id} className="hover:bg-zinc-800/30 transition">
+                    <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-zinc-800/40 transition">
                       {/* Nomor */}
                       <td className="py-2 px-1.5 font-normal text-black dark:text-white whitespace-nowrap">
                         <button
                           onClick={() => onSelectForPreview(item)}
-                          className="hover:text-blue-400 block w-full truncate text-left"
+                          className="hover:text-slate-900 dark:hover:text-white font-medium block w-full truncate text-left"
                           title="Klik untuk pratinjau cetak A4"
                         >
                           <span>{item.nomor || 'Draft'}</span>
@@ -316,7 +316,7 @@ export default function PurchaseList({
                                   <button
                                     disabled={!canEdit}
                                     onClick={() => onSelectForEdit(item)}
-                                    className="p-1 text-zinc-400 hover:text-blue-400 hover:bg-blue-950/30 rounded-lg transition"
+                                    className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 rounded-md transition"
                                     title="Edit Formulir Saya"
                                   >
                                     <Edit3 className="w-4 h-4" />
@@ -324,7 +324,7 @@ export default function PurchaseList({
                                 ) : (
                                   <button
                                     onClick={() => onSelectForEdit(item)}
-                                    className="p-1 text-amber-500 hover:text-amber-400 hover:bg-amber-950/30 rounded-lg transition"
+                                    className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 rounded-md transition"
                                     title={`Lihat Formulir ${item.nomor} milik ${item.dimintaOleh || 'akun lain'} (Hanya Baca)`}
                                   >
                                     <Eye className="w-4 h-4" />
@@ -335,7 +335,7 @@ export default function PurchaseList({
                                   <button
                                     type="button"
                                     onClick={() => onDuplicate(item)}
-                                    className="p-1 text-zinc-400 hover:text-blue-500 rounded-lg"
+                                    className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 rounded-md transition"
                                     title={isOwner ? 'Duplikat FPP' : 'Salin ke Akun Saya'}
                                     aria-label={`Duplikat ${item.nomor}`}
                                   >
@@ -347,7 +347,7 @@ export default function PurchaseList({
                                   <button
                                     onClick={() => handleDelete(item.id, item.nomor)}
                                     disabled={!canDelete || deletingId === item.id}
-                                    className="p-1 text-zinc-400 hover:text-red-400 hover:bg-red-950/30 rounded-lg transition disabled:opacity-50"
+                                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-md transition disabled:opacity-50"
                                     title="Hapus Formulir"
                                   >
                                     <Trash2 className="w-4 h-4" />

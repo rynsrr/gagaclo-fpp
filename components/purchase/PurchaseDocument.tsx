@@ -513,7 +513,7 @@ export default function PurchaseDocument({
       {/* Actual Physical Paper Document - Exactly 1 Page A4 */}
       <div
         id="printable-fpp-document"
-        className="printable-document bg-white text-black w-full max-w-[210mm] min-h-[297mm] p-[8mm] sm:p-[10mm] shadow-2xl print:shadow-none print:p-0 print:m-0 print:w-full print:max-w-none text-[11px] font-sans border border-gray-300 print:border-none select-text box-border flex flex-col justify-between print:gap-0 print:justify-between print:min-h-0 print:h-auto print:max-h-[280mm] print:overflow-hidden"
+        className="printable-document bg-white text-black w-full max-w-[210mm] min-h-[297mm] p-[8mm] sm:p-[10mm] shadow-md border border-slate-300 dark:border-zinc-700 print:shadow-none print:p-0 print:m-0 print:w-full print:max-w-none text-[11px] font-sans border border-gray-300 print:border-none select-text box-border flex flex-col justify-between print:gap-0 print:justify-between print:min-h-0 print:h-auto print:max-h-[280mm] print:overflow-hidden"
         style={{ fontFamily: '"Arial", "Helvetica", sans-serif' }}
       >
         {/* ========================================================
@@ -890,11 +890,11 @@ export default function PurchaseDocument({
 
             {/* In-table Add Row Action (Screen only) */}
             {isEditable && (
-              <div className="no-print border-t border-dashed border-gray-200 bg-gray-50/80 hover:bg-blue-50/60 p-1 flex items-center justify-between px-3 text-[10.5px] text-gray-500 transition">
+              <div className="no-print border-t border-dashed border-slate-200 bg-slate-50/60 hover:bg-slate-100 p-1 flex items-center justify-between px-3 text-[10.5px] text-slate-600 transition">
                 <button
                   type="button"
                   onClick={handleAddItemRow}
-                  className="flex items-center space-x-1.5 text-blue-600 hover:text-blue-700 font-medium py-0.5"
+                  className="flex items-center space-x-1.5 text-slate-800 hover:text-black dark:text-zinc-200 dark:hover:text-white font-medium py-0.5"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Tambah Baris Barang</span>

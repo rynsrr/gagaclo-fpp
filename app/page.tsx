@@ -590,9 +590,9 @@ export default function MainPage() {
               </div>
             </div>
 
-            {/* Right Status & Fast Action */}
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              {/* Status Akun Editor (Pilih User Langsung) */}
+            {/* Right Status & Actions */}
+            <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-2.5">
+              {/* Status Akun Editor */}
               {!currentUser ? (
                 <button
                   type="button"
@@ -600,109 +600,113 @@ export default function MainPage() {
                     setPasswordModalTab('SELECT');
                     setIsPasswordModalOpen(true);
                   }}
-                  className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/30 hover:bg-blue-500/20 transition shadow-sm"
+                  className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-200 border border-slate-300 dark:border-zinc-700 transition"
                   title="Klik untuk memilih akun Anda"
                 >
-                  <UserCheck className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                  <UserCheck className="w-3.5 h-3.5 text-slate-500 dark:text-zinc-400" />
                   <span>Pilih Akun</span>
                 </button>
               ) : (
-                <div className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 shadow-sm">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <div className="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 dark:bg-zinc-800/80 text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-zinc-700">
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-500 dark:bg-zinc-400" />
                   <span className="font-semibold capitalize">{currentUser}</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPasswordModalTab('SELECT');
-                      setIsPasswordModalOpen(true);
-                    }}
-                    className="ml-1 text-[10px] text-blue-600 dark:text-blue-400 hover:underline"
-                    title="Ganti ke akun lain"
-                  >
-                    Ganti
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPasswordModalTab('MANAGE');
-                      setIsPasswordModalOpen(true);
-                    }}
-                    className="ml-0.5 text-[10px] text-zinc-500 dark:text-zinc-400 hover:underline"
-                    title="Kelola akun (tambah/hapus user)"
-                  >
-                    Kelola
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="ml-0.5 text-[10px] text-red-500 hover:underline"
-                    title="Keluar mode edit"
-                  >
-                    Keluar
-                  </button>
+                  <div className="flex items-center space-x-1.5 border-l border-slate-300 dark:border-zinc-700 pl-2 text-[11px] text-slate-500 dark:text-zinc-400">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPasswordModalTab('SELECT');
+                        setIsPasswordModalOpen(true);
+                      }}
+                      className="hover:text-slate-900 dark:hover:text-white transition"
+                      title="Ganti ke akun lain"
+                    >
+                      Ganti
+                    </button>
+                    <span>•</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPasswordModalTab('MANAGE');
+                        setIsPasswordModalOpen(true);
+                      }}
+                      className="hover:text-slate-900 dark:hover:text-white transition"
+                      title="Kelola akun (tambah/hapus user)"
+                    >
+                      Kelola
+                    </button>
+                    <span>•</span>
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="text-red-600 dark:text-red-400 hover:underline"
+                      title="Keluar mode edit"
+                    >
+                      Keluar
+                    </button>
+                  </div>
                 </div>
               )}
 
-              <div className="no-print flex items-center gap-2" role="group" aria-label="Aksi formulir">
+              {/* Action Buttons Group */}
+              <div className="no-print flex items-center gap-1.5" role="group" aria-label="Aksi formulir">
                 <button
                   type="button"
                   disabled={isLoading}
                   onClick={handleAddNewFPP}
-                  className="inline-flex items-center justify-center w-10 h-10 shrink-0 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition active:scale-95 disabled:opacity-50 shadow-sm"
+                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800 transition text-xs font-medium disabled:opacity-50"
                   aria-label="Formulir baru"
                   title="Buat formulir baru dengan nomor urut berikutnya"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Baru</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => window.print()}
-                  className="inline-flex items-center justify-center w-10 h-10 shrink-0 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-black dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition active:scale-95 disabled:opacity-50 shadow-sm"
+                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800 transition text-xs font-medium disabled:opacity-50"
                   aria-label="Cetak / PDF"
                   title="Cetak langsung atau simpan sebagai PDF A4 (Pasti 1 Halaman)"
                 >
-                  <Printer className="w-4 h-4" />
+                  <Printer className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Cetak</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={handleSavePurchase}
                   disabled={isSaving || isLoading}
-                  className="inline-flex items-center justify-center w-10 h-10 shrink-0 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-emerald-600 hover:bg-emerald-700 text-white transition active:scale-95 disabled:opacity-50 shadow-sm"
+                  className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-black transition text-xs font-medium shadow-sm disabled:opacity-50"
                   aria-label={isSaving ? 'Menyimpan...' : 'Simpan FPP'}
                   aria-busy={isSaving}
                   title="Simpan formulir ke database Supabase dan penyimpanan lokal"
                 >
-                  <Save className={`w-4 h-4 ${isSaving ? 'animate-pulse' : ''}`} />
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{isSaving ? 'Menyimpan...' : 'Simpan'}</span>
                 </button>
               </div>
 
-              {/* Dark / Light Mode Toggle */}
+              {/* Theme Toggle */}
               <button
                 onClick={toggleTheme}
-                className="p-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white transition shadow-sm"
+                className="p-1.5 rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white transition"
                 title={theme === 'dark' ? 'Ganti ke Light Mode' : 'Ganti ke Dark Mode'}
               >
-                {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
+                {theme === 'dark' ? <Sun className="w-4 h-4 text-slate-200" /> : <Moon className="w-4 h-4 text-slate-700" />}
               </button>
 
-              {/* Icon Penggunaan Kuota (Indikator Murni tanpa aksi klik) */}
-              <div
-                className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-medium bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm cursor-default select-none"
-                title={`Penggunaan Kuota Database: ${quotaUsageText} (${purchases.length} FPP tersimpan)`}
-                aria-label={`Kuota database ${quotaUsageText}`}
-              >
-                <Database className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                <span className="text-slate-700 dark:text-zinc-300 font-mono text-[11px] sm:text-xs">
-                  {quotaUsageText}
-                </span>
-                <span
-                  className={`w-2 h-2 rounded-full shrink-0 ${
-                    isTableReady ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'
-                  }`}
-                />
+              {/* Quota Indicators */}
+              <div className="hidden lg:flex items-center gap-1.5">
+                <div
+                  className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-[11px] text-slate-500 dark:text-zinc-400 bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 select-none"
+                  title={`Penggunaan Kuota Database: ${quotaUsageText} (${purchases.length} FPP tersimpan)`}
+                  aria-label={`Kuota database ${quotaUsageText}`}
+                >
+                  <Database className="w-3 h-3 text-slate-400" />
+                  <span className="font-mono">{quotaUsageText}</span>
+                  <span className={`w-1.5 h-1.5 rounded-full ${isTableReady ? 'bg-slate-400 dark:bg-zinc-500' : 'bg-amber-400'}`} />
+                </div>
+                <R2Quota />
               </div>
-              <R2Quota />
             </div>
           </div>
         </div>
@@ -714,9 +718,9 @@ export default function MainPage() {
           <div className="w-full grid grid-cols-1 xl:grid-cols-[minmax(0,210mm)_minmax(0,1fr)] gap-6 items-start print:block">
             <div className="w-full max-w-[210mm] mx-auto space-y-3">
               {!currentUser ? (
-                <div className="no-print flex items-center justify-between p-2.5 rounded-xl border border-blue-200 dark:border-blue-900/40 bg-blue-50/80 dark:bg-blue-950/20 text-xs text-blue-900 dark:text-blue-300 shadow-sm">
+                <div className="no-print flex items-center justify-between p-2.5 rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-slate-700 dark:text-zinc-300 shadow-sm">
                   <div className="flex items-center gap-2">
-                    <UserCheck className="w-4 h-4 text-blue-600 shrink-0" />
+                    <UserCheck className="w-4 h-4 text-slate-500 shrink-0" />
                     <span>Dokumen dalam <strong>Mode Lihat</strong>. Pilih akun editor untuk mulai mengedit.</span>
                   </div>
                   <button
@@ -725,23 +729,23 @@ export default function MainPage() {
                       setPasswordModalTab('SELECT');
                       setIsPasswordModalOpen(true);
                     }}
-                    className="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs transition active:scale-95 shrink-0"
+                    className="px-3 py-1 rounded-md bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-black font-medium text-xs transition shrink-0"
                   >
                     Pilih Akun
                   </button>
                 </div>
               ) : !checkIsOwner(currentPurchase, currentUser) ? (
-                <div className="no-print flex items-center justify-between p-2.5 rounded-xl border border-amber-200 dark:border-amber-900/40 bg-amber-50/90 dark:bg-amber-950/30 text-xs text-amber-800 dark:text-amber-300 shadow-sm">
+                <div className="no-print flex items-center justify-between p-2.5 rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-slate-700 dark:text-zinc-300 shadow-sm">
                   <div className="flex items-center gap-2">
-                    <Lock className="w-4 h-4 text-amber-600 shrink-0" />
+                    <Lock className="w-4 h-4 text-slate-500 shrink-0" />
                     <span>
-                      Dokumen <strong>{currentPurchase.nomor}</strong> dibuat oleh <strong>{currentPurchase.dimintaOleh || 'Akun Lain'}</strong>. Anda masuk sebagai <strong>{formatUserName(currentUser)}</strong> (Hanya bisa melihat, tidak bisa mengedit FPP akun lain).
+                      Dokumen <strong>{currentPurchase.nomor}</strong> dibuat oleh <strong>{currentPurchase.dimintaOleh || 'Akun Lain'}</strong>. Anda masuk sebagai <strong>{formatUserName(currentUser)}</strong> (Hanya baca).
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => handleDuplicatePurchase(currentPurchase)}
-                    className="px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs transition active:scale-95 shrink-0"
+                    className="px-3 py-1 rounded-md border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-slate-50 text-slate-800 dark:text-zinc-200 font-medium text-xs transition shrink-0"
                     title="Buat salinan formulir ini atas nama Anda"
                   >
                     Salin ke Akun Saya
