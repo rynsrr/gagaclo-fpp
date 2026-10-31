@@ -28,6 +28,11 @@ import {
   removeDraft,
   storeDraft,
 } from '@/lib/purchaseEditing';
+import {
+  syncMasterItemsFromPurchases,
+  recordMasterItem,
+} from '@/lib/itemCatalogService';
+import { getUsers } from '@/lib/userService';
 
 // Icons
 import {
@@ -128,6 +133,16 @@ export default function MainPage() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [passwordModalTab, setPasswordModalTab] = useState<'LOGIN' | 'MANAGE'>('LOGIN');
+  const [userVersion, setUserVersion] = useState(0);
+
+  useEffect(() => {
+    const handler = () => setUserVersion((v) => v + 1);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('fpp-users-updated', handler);
+      return () => window.removeEventListener('fpp-users-updated', handler);
+    }
+  }, []);
 
   useEffect(() => {
     try {
@@ -164,7 +179,7 @@ export default function MainPage() {
 
   // Daftar akun peminta untuk kategori/filter (standar + yang ada di riwayat & draft)
   const availableUsers = React.useMemo(() => {
-    const defaultUsers = ['Royan', 'Ryan', 'Ami', 'Hanami', 'Cynara'];
+    const defaultUsers = getUsers().map(formatUserName);
     const map = new Map<string, string>();
     defaultUsers.forEach((u) => map.set(u.toLowerCase(), u));
 
@@ -195,7 +210,7 @@ export default function MainPage() {
     });
 
     return Array.from(map.values());
-  }, [purchases, drafts]);
+  }, [purchases, drafts, userVersion]);
 
   // Hitung jumlah formulir per user
   const userCounts = React.useMemo(() => {
@@ -310,6 +325,7 @@ export default function MainPage() {
     const { data } = await getAllPurchases();
     const savedPurchases = data || [];
     setPurchases(savedPurchases);
+    syncMasterItemsFromPurchases(savedPurchases);
     if (initialize) {
       let activeUser: string | null = null;
       if (typeof window !== 'undefined') {
@@ -448,6 +464,18 @@ export default function MainPage() {
       try {
         removeDraft(snapshot.id);
         setDrafts(listDrafts());
+        // Simpan setiap item ke master katalog agar otomatis tersedia untuk input berikutnya
+        snapshot.items.forEach((item) => {
+          if (item.namaBarang && item.namaBarang.trim()) {
+            const match = (item.banyaknya || '').trim().match(/^(\d+(?:[.,]\d+)?)\s*(.*)$/);
+            recordMasterItem({
+              namaBarang: item.namaBarang,
+              satuan: item.satuan || match?.[2] || '',
+              hargaSatuan: item.hargaSatuan,
+              supplier: item.supplier,
+            });
+          }
+        });
       } catch {}
       setTimeout(() => setSaveNotice(null), 4000);
     } else {
@@ -580,6 +608,17 @@ export default function MainPage() {
                 <div className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 shadow-sm">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   <span className="font-semibold capitalize">{currentUser}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPasswordModalTab('MANAGE');
+                      setIsPasswordModalOpen(true);
+                    }}
+                    className="ml-1 text-[10px] text-blue-600 dark:text-blue-400 hover:underline"
+                    title="Kelola akun (tambah/hapus user)"
+                  >
+                    Kelola User
+                  </button>
                   <button
                     type="button"
                     onClick={handleLogout}
@@ -794,6 +833,8 @@ export default function MainPage() {
       <PasswordModal
         isOpen={isPasswordModalOpen}
         onClose={() => setIsPasswordModalOpen(false)}
+        initialTab={passwordModalTab}
+        onLogout={handleLogout}
         onSuccess={(username) => {
           setCurrentUser(username);
           const formatted = formatUserName(username);

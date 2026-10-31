@@ -7,6 +7,14 @@ import AttachmentPanel from './AttachmentPanel';
 import React, { useRef, useState, useEffect } from 'react';
 import { PurchaseRequisition, PurchaseItem, PurchaseJenis, PurchasePhoto } from '@/types/purchase';
 import { formatRupiah, formatShortDate, calculateItemAmount } from '@/lib/purchaseService';
+import {
+  getMasterItems,
+  findMasterItem,
+  recordMasterItem,
+  getAllSuppliers,
+  getAllUnits,
+  MasterItem,
+} from '@/lib/itemCatalogService';
 import GagacloLogo from '@/components/GagacloLogo';
 import { compressImage } from '@/lib/imageUtils';
 import {
@@ -66,6 +74,79 @@ export default function PurchaseDocument({
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [pasteNotice, setPasteNotice] = useState<string | null>(null);
+
+  // Master Item Catalog (untuk auto-fill data lama & simpan barang baru)
+  const [catalog, setCatalog] = useState<MasterItem[]>(() => getMasterItems());
+  const [autoFilledIndex, setAutoFilledIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const refreshCatalog = () => {
+      setCatalog(getMasterItems());
+    };
+    refreshCatalog();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('fpp-catalog-updated', refreshCatalog);
+      return () => window.removeEventListener('fpp-catalog-updated', refreshCatalog);
+    }
+  }, []);
+
+  const allSuppliers = React.useMemo(() => getAllSuppliers(catalog), [catalog]);
+  const allUnits = React.useMemo(() => getAllUnits(catalog), [catalog]);
+
+  // Handler input nama barang: jika ada di data lama, otomatis ambil satuan, harga, dan supplier
+  const handleItemNameChange = (index: number, newName: string) => {
+    if (!onChange) return;
+    const current = dataRef.current;
+    const updatedItems = [...current.items];
+    const targetItem = { ...updatedItems[index], namaBarang: newName };
+
+    // Cari di katalog barang lama
+    const match = findMasterItem(newName, catalog);
+    if (match) {
+      const { qty: curQty } = parseQtySatuan(targetItem.banyaknya, targetItem.qty, targetItem.satuan);
+      const matchSatuan = match.satuan || '';
+
+      if (matchSatuan) {
+        targetItem.satuan = matchSatuan;
+        targetItem.banyaknya = curQty ? (curQty + ' ' + matchSatuan).trim() : matchSatuan;
+      }
+      if (match.hargaSatuan && match.hargaSatuan > 0) {
+        targetItem.hargaSatuan = match.hargaSatuan;
+      }
+      if (match.supplier) {
+        targetItem.supplier = match.supplier;
+      }
+
+      // Hitung ulang jumlah
+      targetItem.jumlah = calculateItemAmount(String(targetItem.banyaknya || ''), targetItem.hargaSatuan || 0);
+
+      // Notifikasi visual data lama dimuat
+      setAutoFilledIndex(index);
+      setTimeout(() => setAutoFilledIndex(null), 2500);
+    }
+
+    updatedItems[index] = targetItem;
+    const newTotal = calculateTotal(updatedItems);
+    onChange({
+      ...current,
+      items: updatedItems,
+      totalTaksiran: newTotal,
+    });
+  };
+
+  // Simpan data barang ke master katalog saat selesai input (onBlur)
+  const handleItemRowBlur = (index: number) => {
+    const item = dataRef.current.items[index];
+    if (item && item.namaBarang && item.namaBarang.trim()) {
+      const { satuan } = parseQtySatuan(item.banyaknya, item.qty, item.satuan);
+      recordMasterItem({
+        namaBarang: item.namaBarang,
+        satuan,
+        hargaSatuan: item.hargaSatuan,
+        supplier: item.supplier,
+      });
+    }
+  };
 
   // Recalculate total taksiran
   const calculateTotal = (itemList: PurchaseItem[]): number => {
@@ -386,7 +467,28 @@ export default function PurchaseDocument({
 
   return (
     <div className="flex flex-col items-center w-full">
-      <datalist id="fpp-unit-options">{['Pcs','Unit','Set','Box','Roll','Kg','Meter','Liter'].map(unit => <option key={unit} value={unit} />)}</datalist>
+      {/* Autocomplete Datalists: Item Catalog, Satuan, dan Supplier */}
+      <datalist id="fpp-item-options">
+        {catalog.map((c) => (
+          <option key={c.namaBarang} value={c.namaBarang}>
+            {[
+              c.satuan ? c.satuan : null,
+              c.hargaSatuan ? formatRupiah(c.hargaSatuan) : null,
+              c.supplier || null,
+            ].filter(Boolean).join(' • ')}
+          </option>
+        ))}
+      </datalist>
+      <datalist id="fpp-supplier-options">
+        {allSuppliers.map((sup) => (
+          <option key={sup} value={sup} />
+        ))}
+      </datalist>
+      <datalist id="fpp-unit-options">
+        {allUnits.map((unit) => (
+          <option key={unit} value={unit} />
+        ))}
+      </datalist>
       {/* Top Action Toolbar (Hidden during print) */}
       {!hidePrintControls && (saveNotice || pasteNotice) && (
         <div className="no-print w-full max-w-[210mm] mb-4 space-y-2">
@@ -609,6 +711,7 @@ export default function PurchaseDocument({
                         <>
                           <input
                             type="text"
+                            list="fpp-item-options"
                             ref={(input) => { itemNameInputs.current[index] = input; }}
                             onKeyDown={(event) => {
                               if (event.key !== 'Enter' || event.nativeEvent.isComposing || event.repeat || !onChange) return;
@@ -618,10 +721,16 @@ export default function PurchaseDocument({
                             }}
                             aria-label={`Nama barang baris ${index + 1}`}
                             value={item.namaBarang}
-                            onChange={(e) => handleItemChange(index, 'namaBarang', e.target.value)}
+                            onChange={(e) => handleItemNameChange(index, e.target.value)}
+                            onBlur={() => handleItemRowBlur(index)}
                             placeholder="Ketik nama barang..."
                             className="w-full bg-transparent hover:bg-blue-50/40 focus:bg-blue-50/80 focus:ring-1 focus:ring-blue-400 focus:outline-none px-1 py-0.5 text-[10.5px] rounded transition print:hidden placeholder:text-gray-400 placeholder:italic"
                           />
+                          {autoFilledIndex === index && (
+                            <span className="no-print block text-[9px] text-emerald-600 dark:text-emerald-400 font-medium">
+                              ✓ Data lama dimuat
+                            </span>
+                          )}
                           <span className="hidden print:inline-block break-words">{item.namaBarang}</span>
                           
                         </>
@@ -667,6 +776,7 @@ export default function PurchaseDocument({
                               placeholder="Satuan"
                               className="w-[55%] min-w-0 text-left bg-transparent hover:bg-blue-50/50 focus:bg-blue-50/90 focus:ring-1 focus:ring-blue-400 focus:outline-none px-0.5 py-0 text-[10px] rounded transition font-normal text-slate-700 dark:text-zinc-300 placeholder:text-gray-400 uppercase"
                               title="Satuan (Pcs, Meter, Roll, Box, dsb)"
+                              onBlur={() => handleItemRowBlur(index)}
                             />
                           </div>
                           <span className="hidden print:inline-block whitespace-nowrap text-[10px]">
@@ -694,6 +804,7 @@ export default function PurchaseDocument({
                             }
                             placeholder="0"
                             className="w-full text-right bg-transparent hover:bg-blue-50/40 focus:bg-blue-50/80 focus:ring-1 focus:ring-blue-400 focus:outline-none px-1 py-0.5 text-[10.5px] rounded transition print:hidden [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-gray-400"
+                            onBlur={() => handleItemRowBlur(index)}
                           />
                           <span className="hidden print:inline-block whitespace-nowrap">
                             {item.hargaSatuan > 0 ? formatRupiah(item.hargaSatuan).replace('Rp ', '') : ''}
@@ -738,9 +849,11 @@ export default function PurchaseDocument({
                         <div className="flex items-center justify-between">
                           <input
                             type="text"
+                            list="fpp-supplier-options"
                             value={item.supplier}
                             onKeyDown={(event) => handleNextItemOnEnter(event, index)}
                             onChange={(e) => handleItemChange(index, 'supplier', e.target.value)}
+                            onBlur={() => handleItemRowBlur(index)}
                             placeholder="Nama supplier..."
                             className="w-full bg-transparent hover:bg-blue-50/40 focus:bg-blue-50/80 focus:ring-1 focus:ring-blue-400 focus:outline-none px-1 py-0.5 text-[10.5px] rounded transition print:hidden placeholder:text-gray-400 placeholder:italic"
                           />
