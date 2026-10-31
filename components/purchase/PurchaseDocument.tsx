@@ -513,7 +513,7 @@ export default function PurchaseDocument({
       {/* Actual Physical Paper Document - Exactly 1 Page A4 */}
       <div
         id="printable-fpp-document"
-        className="printable-document bg-white text-black w-full max-w-[210mm] min-h-0 p-[10mm] shadow-2xl print:shadow-none print:p-0 print:m-0 print:w-full print:max-w-none text-[11px] font-sans border border-gray-300 print:border-none select-text box-border flex flex-col gap-3 print:gap-0 print:justify-between print:min-h-0 print:h-auto print:max-h-[280mm] print:overflow-hidden"
+        className="printable-document bg-white text-black w-full max-w-[210mm] min-h-[297mm] p-[8mm] sm:p-[10mm] shadow-2xl print:shadow-none print:p-0 print:m-0 print:w-full print:max-w-none text-[11px] font-sans border border-gray-300 print:border-none select-text box-border flex flex-col justify-between print:gap-0 print:justify-between print:min-h-0 print:h-auto print:max-h-[280mm] print:overflow-hidden"
         style={{ fontFamily: '"Arial", "Helvetica", sans-serif' }}
       >
         {/* ========================================================
@@ -1102,13 +1102,13 @@ export default function PurchaseDocument({
         {/* ========================================================
             BAGIAN BAWAH: LAMPIRAN (SETENGAH A4 - TETAP 1 HALAMAN)
             ======================================================== */}
-        <div className="w-full flex flex-col print:h-[122mm] print:max-h-[122mm] print:overflow-hidden">
+        <div className="w-full flex-1 flex flex-col min-h-0 print:h-[122mm] print:max-h-[122mm] print:overflow-hidden">
           {/* Header Lampiran (Hanya tulis LAMPIRAN) */}
           <div className="w-full border border-black py-1 font-bold text-[12px] tracking-wider uppercase text-left bg-white flex items-center justify-between px-3 relative">
             <span className="font-bold tracking-wider text-left">LAMPIRAN</span>
           </div>
 
-          <div className="no-print"><AttachmentPanel photos={photos} isEditable={isEditable} onChange={next => updateField('photos',next)} /></div>
+          <div className="no-print flex-1 flex flex-col min-h-0"><AttachmentPanel photos={photos} isEditable={isEditable} onChange={next => updateField('photos',next)} /></div>
           <div className="hidden print:contents">
           {/* Hidden File Input for Image Upload */}
           <input
