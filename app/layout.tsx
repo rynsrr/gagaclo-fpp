@@ -1,20 +1,5 @@
 import type { Metadata } from 'next';
-import { Great_Vibes, Dancing_Script } from 'next/font/google';
 import './globals.css';
-
-const greatVibes = Great_Vibes({
-  weight: '400',
-  subsets: ['latin'],
-  variable: '--font-great-vibes',
-  display: 'swap',
-});
-
-const dancingScript = Dancing_Script({
-  weight: ['600', '700'],
-  subsets: ['latin'],
-  variable: '--font-dancing-script',
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   title: 'Formulir Permohonan Pembelian | PT Gagaclo',
@@ -30,7 +15,6 @@ export default function RootLayout({
     <html
       lang="id"
       suppressHydrationWarning
-      className={`${greatVibes.variable} ${dancingScript.variable}`}
     >
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />

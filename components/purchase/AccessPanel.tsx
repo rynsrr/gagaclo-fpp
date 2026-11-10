@@ -4,7 +4,7 @@ import {supabase} from '@/lib/supabase';
 export default function AccessPanel(){
  const [role,setRole]=useState(''); const [open,setOpen]=useState(false); const [members,setMembers]=useState<any[]>([]);const [email,setEmail]=useState('');const [permission,setPermission]=useState('viewer');const [message,setMessage]=useState('');
  const load=async()=>{const {data,error}=await supabase!.from('fpp_access').select('email,role').order('email');if(error)setMessage(error.message);else setMembers(data||[]);};
- useEffect(()=>{void supabase?.rpc('fpp_role').then(({data})=>setRole(data||''));},[]);
+ useEffect(()=>{void supabase?.rpc('fpp_role').then(({data}: any)=>setRole(data||''));},[]);
  if(role!=='admin')return null;
  return <section className="rounded-xl border border-slate-200 dark:border-zinc-800 p-3 text-xs space-y-3"><button type="button" onClick={()=>{setOpen(!open);if(!open)void load();}} className="font-semibold">{open?'Tutup pengaturan pengguna':'Kelola akses pengguna'}</button>
  {open&&<><p>Admin: kelola akses dan hapus FPP. Editor: buat dan edit. Viewer: lihat dan cetak.</p>

@@ -202,7 +202,7 @@ export async function getAllPurchases(): Promise<{ data: PurchaseRequisition[]; 
         const cloud = data.map(mapFromDb);
         const pending = getLocalPurchases().filter((item) => item.pendingSync);
         const pendingIds = new Set(pending.map((item) => item.id));
-        const mapped = [...pending, ...cloud.filter((item) => !pendingIds.has(item.id))];
+        const mapped = [...pending, ...cloud.filter((item: PurchaseRequisition) => !pendingIds.has(item.id))];
         // Cache to local storage
         saveLocalPurchases(mapped);
         return { data: mapped, fromCloud: true };

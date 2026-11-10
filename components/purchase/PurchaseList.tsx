@@ -34,6 +34,77 @@ interface PurchaseListProps {
   totalAllPurchases?: number;
 }
 
+function getDayCounter(tanggalStr?: string, tanggalDiterimaStr?: string, status?: string) {
+  if (!tanggalStr) return null;
+  const parts = tanggalStr.slice(0, 10).split('-').map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) return null;
+  const docDate = new Date(parts[0], parts[1] - 1, parts[2]);
+  if (isNaN(docDate.getTime())) return null;
+
+  // Jika barang sudah diterima (tanggalDiterima diisi)
+  if (tanggalDiterimaStr && tanggalDiterimaStr.trim()) {
+    const recvParts = tanggalDiterimaStr.slice(0, 10).split('-').map(Number);
+    if (recvParts.length === 3 && !recvParts.some(isNaN)) {
+      const recvDate = new Date(recvParts[0], recvParts[1] - 1, recvParts[2]);
+      if (!isNaN(recvDate.getTime())) {
+        const diffMs = recvDate.getTime() - docDate.getTime();
+        const diffDays = Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+        return {
+          text: `✓ ${diffDays} hari`,
+          fullText: `Diterima dalam ${diffDays} hari (selesai)`,
+          colorClass: 'text-emerald-600 dark:text-emerald-400 font-medium',
+        };
+      }
+    }
+  }
+
+  // Jika status sudah diterima/selesai
+  if (status === 'Diterima' || status === 'Selesai') {
+    return {
+      text: '✓ Diterima',
+      fullText: 'Barang sudah diterima',
+      colorClass: 'text-emerald-600 dark:text-emerald-400 font-medium',
+    };
+  }
+
+  // Hitung selisih hari berjalan sampai hari ini
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diffMs = today.getTime() - docDate.getTime();
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) {
+    return {
+      text: 'Hari ini',
+      fullText: 'Diajukan hari ini (0 hari)',
+      colorClass: 'text-blue-600 dark:text-blue-400 font-medium',
+    };
+  }
+
+  if (diffDays < 0) {
+    const futureDays = Math.abs(diffDays);
+    return {
+      text: `${futureDays} hari lagi`,
+      fullText: `Tanggal mendatang (${futureDays} hari lagi)`,
+      colorClass: 'text-slate-400 dark:text-zinc-500',
+    };
+  }
+
+  // Menandai warna berdasarkan durasi tunggu FPP
+  let colorClass = 'text-slate-500 dark:text-zinc-400';
+  if (diffDays >= 7) {
+    colorClass = 'text-red-600 dark:text-red-400 font-medium';
+  } else if (diffDays >= 4) {
+    colorClass = 'text-amber-600 dark:text-amber-400 font-medium';
+  }
+
+  return {
+    text: `${diffDays} hari`,
+    fullText: `Sudah berjalan ${diffDays} hari sejak ${parts[2]}/${parts[1]}/${parts[0]}`,
+    colorClass,
+  };
+}
+
 export default function PurchaseList({
   purchases,
   onSelectForEdit,
@@ -130,6 +201,7 @@ export default function PurchaseList({
         purchase.jenis,
         purchase.dimintaOleh,
         purchase.uraianKeperluan,
+        getDayCounter(purchase.tanggal, purchase.tanggalDiterima, purchase.status)?.text,
         ...purchase.items.flatMap((item) => [item.namaBarang, item.supplier]),
       ].some((value) => value?.toLocaleLowerCase('id-ID').includes(query));
     });
@@ -237,7 +309,7 @@ export default function PurchaseList({
               <thead>
                 <tr className="border-b border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 font-medium bg-slate-50 dark:bg-zinc-950 sticky top-0 z-10 text-[11px]">
                   <th className="py-2 px-1.5">Nomor FPP</th>
-                  <th className="py-2 px-1.5">Tanggal</th>
+                  <th className="py-2 px-1.5" title="Tanggal pengajuan & hitungan hari">Tanggal</th>
                   <th className="py-2 px-1.5">Jenis</th>
                   <th className="py-2 px-1.5">Barang</th>
                   <th className="py-2 px-1.5 text-center">Aksi</th>
@@ -267,9 +339,23 @@ export default function PurchaseList({
                         </button>
                       </td>
 
-                      {/* Tanggal */}
-                      <td className="py-2 px-1.5 text-zinc-400 whitespace-nowrap">
-                        {item.tanggal ? item.tanggal.slice(0, 10).split('-').reverse().map((part, index) => index === 2 ? part.slice(-2) : part).join('/') : '—'}
+                      {/* Tanggal & Penghitung Hari */}
+                      <td className="py-2 px-1.5 whitespace-nowrap">
+                        <span className="block font-normal text-slate-800 dark:text-zinc-200">
+                          {item.tanggal ? item.tanggal.slice(0, 10).split('-').reverse().map((part, index) => index === 2 ? part.slice(-2) : part).join('/') : '—'}
+                        </span>
+                        {(() => {
+                          const counter = getDayCounter(item.tanggal, item.tanggalDiterima, item.status);
+                          if (!counter) return null;
+                          return (
+                            <span
+                              className={`block text-[10px] truncate ${counter.colorClass}`}
+                              title={counter.fullText}
+                            >
+                              {counter.text}
+                            </span>
+                          );
+                        })()}
                       </td>
 
                       {/* Jenis */}
