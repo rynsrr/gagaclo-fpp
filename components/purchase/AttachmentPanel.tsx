@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { PurchasePhoto } from '@/types/purchase';
 import { compressImage } from '@/lib/imageUtils';
 import { uploadAttachment, deleteAttachment } from '@/lib/attachmentUpload';
-import { ArrowLeft, ArrowRight, UploadCloud, X, FileText, Eye } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Camera, UploadCloud, X, FileText, Eye } from 'lucide-react';
 
 export default function AttachmentPanel({
   photos,
@@ -17,6 +17,7 @@ export default function AttachmentPanel({
   compactMobile?: boolean;
 }) {
   const input = useRef<HTMLInputElement>(null);
+  const cameraInput = useRef<HTMLInputElement>(null);
   const active = useRef(true);
   const latest = useRef(photos);
   latest.current = photos;
@@ -43,23 +44,30 @@ export default function AttachmentPanel({
     setError('');
     try {
       for (const [index, file] of files.slice(0, remaining).entries()) {
-        if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+        const isImage =
+          file.type.startsWith('image/') ||
+          (!file.type && /\.(jpe?g|png|webp|heic|heif)$/i.test(file.name || ''));
+        const isPdf = file.type === 'application/pdf';
+        if (!isImage && !isPdf) {
           throw new Error('Pilih foto atau PDF.');
         }
-        setProgress(`Menyiapkan ${index + 1}/${Math.min(files.length, remaining)}: ${file.name}`);
-        const data = file.type.startsWith('image/') ? await compressImage(file, 1200, 0.82) : file;
+        const displayName = file.name || `Foto ${latest.current.length + 1}`;
+        setProgress(`Menyiapkan ${index + 1}/${Math.min(files.length, remaining)}: ${displayName}`);
+        const data = isImage ? await compressImage(file, 1200, 0.82) : file;
         const url = await uploadAttachment(data, (percent) => {
-          if (active.current) setProgress(`Mengunggah ${file.name}: ${percent}%`);
+          if (active.current) setProgress(`Mengunggah ${displayName}: ${percent}%`);
         });
         if (!active.current) return;
+        const rawBase = (file.name || '').replace(/\.[^/.]+$/, '').trim();
+        const isGenericCameraName = !rawBase || /^(image|img[_-]?\d+|pxl[_-]?\d+|\d{8,})$/i.test(rawBase);
         const next = [
           ...latest.current,
           {
             id: `attachment-${crypto.randomUUID()}`,
             url,
-            name: file.name,
-            caption: file.name.replace(/\.[^/.]+$/, ''),
-            type: file.type.startsWith('image/') ? 'image/jpeg' : file.type,
+            name: displayName,
+            caption: isGenericCameraName ? `Foto ${latest.current.length + 1}` : rawBase,
+            type: isImage ? 'image/jpeg' : file.type,
             size: file.size,
           },
         ];
@@ -137,23 +145,64 @@ export default function AttachmentPanel({
           e.target.value = '';
         }}
       />
+      <input
+        ref={cameraInput}
+        className="hidden"
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={(e) => {
+          void add(Array.from(e.target.files || []));
+          e.target.value = '';
+        }}
+      />
 
-      {isEditable && (
-        <button
-          type="button"
-          disabled={uploading || photos.length >= 6}
-          onClick={() => input.current?.click()}
-          className={`w-full min-h-[44px] p-2.5 border border-dashed rounded-xl text-xs font-medium flex gap-2 items-center justify-center disabled:opacity-50 transition shrink-0 ${
-            compactMobile
-              ? 'border-slate-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800'
-              : 'border-slate-300 hover:border-blue-400 hover:bg-blue-50/20 text-slate-800'
-          }`}
-        >
-          <UploadCloud size={16} aria-hidden="true" />
-          <span>{compactMobile ? 'Ambil Foto / Pilih File PDF' : 'Tambah foto / PDF'}</span>
-          <span className="text-slate-500 dark:text-zinc-400">({photos.length}/6)</span>
-        </button>
-      )}
+      {isEditable &&
+        (compactMobile ? (
+          <div className="grid grid-cols-2 gap-2 shrink-0">
+            <button
+              type="button"
+              disabled={uploading || photos.length >= 6}
+              onClick={() => cameraInput.current?.click()}
+              className="min-h-[48px] px-3 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-black text-xs font-semibold flex gap-2 items-center justify-center shadow-sm active:scale-[0.98] disabled:opacity-50 transition"
+            >
+              <Camera size={16} aria-hidden="true" />
+              <span>Ambil Foto</span>
+            </button>
+            <button
+              type="button"
+              disabled={uploading || photos.length >= 6}
+              onClick={() => input.current?.click()}
+              className="min-h-[48px] px-3 py-2.5 rounded-xl border border-slate-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 text-xs font-semibold flex gap-2 items-center justify-center active:scale-[0.98] disabled:opacity-50 transition"
+            >
+              <UploadCloud size={16} aria-hidden="true" />
+              <span>Galeri / PDF</span>
+            </button>
+          </div>
+        ) : (
+          <div className="flex gap-2 shrink-0">
+            <button
+              type="button"
+              disabled={uploading || photos.length >= 6}
+              onClick={() => input.current?.click()}
+              className="flex-1 min-h-[40px] p-2 border border-dashed border-slate-300 hover:border-blue-400 hover:bg-blue-50/20 rounded-xl text-xs font-medium text-slate-800 flex gap-2 items-center justify-center disabled:opacity-50 transition"
+            >
+              <UploadCloud size={15} aria-hidden="true" />
+              <span>Tambah foto / PDF</span>
+              <span className="text-slate-500">({photos.length}/6)</span>
+            </button>
+            <button
+              type="button"
+              disabled={uploading || photos.length >= 6}
+              onClick={() => cameraInput.current?.click()}
+              aria-label="Ambil foto langsung dari kamera"
+              className="min-h-[40px] px-3 border border-slate-300 hover:border-slate-500 hover:bg-slate-50 rounded-xl text-xs font-medium text-slate-800 flex gap-1.5 items-center justify-center disabled:opacity-50 transition shrink-0"
+            >
+              <Camera size={15} aria-hidden="true" />
+              <span>Kamera</span>
+            </button>
+          </div>
+        ))}
 
       {uploading && <p role="status" className="text-xs text-blue-700 dark:text-blue-400 shrink-0">{progress}</p>}
       {error && <p role="alert" className="text-xs text-red-700 dark:text-red-400 shrink-0">{error}</p>}
