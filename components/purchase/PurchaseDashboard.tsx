@@ -2,14 +2,21 @@
 
 import React, { useMemo, useState } from 'react';
 import { PurchaseJenis, PurchaseRequisition } from '@/types/purchase';
-import { formatRupiah, formatShortDate, getPurchaseReceiptStats } from '@/lib/purchaseService';
 import {
+  formatRupiah,
+  formatShortDate,
+  getPurchaseReceiptStats,
+  getPurchaseTimeControl,
+} from '@/lib/purchaseService';
+import {
+  AlertTriangle,
   ArrowUpRight,
   Building2,
   CheckCircle2,
   Clock,
   FileText,
   Plus,
+  Timer,
   Users,
   Wallet,
   X,
@@ -26,6 +33,7 @@ interface PurchaseDashboardProps {
 
 type PeriodFilter = 'ALL' | 'MONTH' | '30D';
 type StatusCardFilter = 'NONE' | 'ACTIVE' | 'PENDING_PARTIAL' | 'COMPLETE';
+type TimeTab = 'ATTENTION' | 'OPEN' | 'DONE';
 
 function getPurchaseTotal(purchase: PurchaseRequisition): number {
   if (typeof purchase.totalTaksiran === 'number' && purchase.totalTaksiran > 0) {
@@ -66,6 +74,7 @@ export default function PurchaseDashboard({
 }: PurchaseDashboardProps) {
   const [period, setPeriod] = useState<PeriodFilter>('ALL');
   const [statusCardFilter, setStatusCardFilter] = useState<StatusCardFilter>('NONE');
+  const [timeTab, setTimeTab] = useState<TimeTab>('ATTENTION');
 
   const toggleStatusCard = (next: StatusCardFilter) => {
     setStatusCardFilter((prev) => (prev === next ? 'NONE' : next));
@@ -246,6 +255,53 @@ export default function PurchaseDashboard({
       : statusCardFilter === 'COMPLETE'
       ? 'Daftar FPP Sudah Diterima'
       : '';
+
+  const timeManagement = useMemo(() => {
+    const entries = filteredPurchases
+      .map((purchase) => ({
+        purchase,
+        receipt: getPurchaseReceiptStats(purchase),
+        time: getPurchaseTimeControl(purchase),
+      }))
+      .filter((entry) => entry.receipt.state !== 'cancelled');
+
+    const attention = entries
+      .filter((e) => e.time.urgency === 'overdue' || e.time.urgency === 'warning')
+      .sort((a, b) => b.time.overdueDays - a.time.overdueDays || b.time.elapsedDays - a.time.elapsedDays);
+
+    const open = entries
+      .filter((e) => e.receipt.state === 'pending' || e.receipt.state === 'partial')
+      .sort((a, b) => b.time.elapsedDays - a.time.elapsedDays);
+
+    const done = entries
+      .filter((e) => e.receipt.state === 'complete')
+      .sort((a, b) => (b.purchase.tanggalDiterima || b.purchase.tanggal || '').localeCompare(a.purchase.tanggalDiterima || a.purchase.tanggal || ''));
+
+    const leadTimes = done
+      .map((e) => e.time.leadTimeDays)
+      .filter((v): v is number => typeof v === 'number');
+    const avgLeadTime =
+      leadTimes.length > 0
+        ? Math.round((leadTimes.reduce((s, n) => s + n, 0) / leadTimes.length) * 10) / 10
+        : null;
+
+    const overdueCount = attention.filter((e) => e.time.urgency === 'overdue').length;
+
+    return {
+      attention,
+      open,
+      done,
+      overdueCount,
+      avgLeadTime,
+    };
+  }, [filteredPurchases]);
+
+  const activeTimeEntries =
+    timeTab === 'ATTENTION'
+      ? timeManagement.attention
+      : timeTab === 'OPEN'
+      ? timeManagement.open
+      : timeManagement.done;
 
   const periodOptions: Array<{ value: PeriodFilter; label: string }> = [
     { value: 'ALL', label: 'Semua' },
@@ -521,6 +577,156 @@ export default function PurchaseDashboard({
               )}
             </section>
           )}
+
+          {/* Manajemen Waktu & Kontrol Penerimaan */}
+          <section
+            aria-label="Manajemen Waktu dan Kontrol Penerimaan"
+            className="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 sm:p-5 space-y-4 shadow-sm"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="text-sm sm:text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Timer className="w-4 h-4 text-slate-600 dark:text-zinc-300" aria-hidden="true" />
+                  <span>Manajemen Waktu &amp; Kontrol Penerimaan</span>
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                  Target otomatis: Segera 2 hari, Non Rutin 5 hari, Rutin 7 hari
+                  {timeManagement.avgLeadTime !== null
+                    ? ` • Rata-rata terima: ${timeManagement.avgLeadTime} hari`
+                    : ''}
+                </p>
+              </div>
+
+              <div
+                role="tablist"
+                aria-label="Filter kontrol waktu"
+                className="flex flex-wrap gap-1.5"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={timeTab === 'ATTENTION'}
+                  onClick={() => setTimeTab('ATTENTION')}
+                  className={`min-h-[40px] px-3 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 border transition ${
+                    timeTab === 'ATTENTION'
+                      ? 'bg-red-600 border-red-600 text-white shadow-sm'
+                      : 'bg-slate-50 dark:bg-zinc-950 border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
+                  }`}
+                >
+                  <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>Perlu Pantau ({timeManagement.attention.length})</span>
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={timeTab === 'OPEN'}
+                  onClick={() => setTimeTab('OPEN')}
+                  className={`min-h-[40px] px-3 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 border transition ${
+                    timeTab === 'OPEN'
+                      ? 'bg-slate-900 dark:bg-white border-slate-900 dark:border-white text-white dark:text-black shadow-sm'
+                      : 'bg-slate-50 dark:bg-zinc-950 border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
+                  }`}
+                >
+                  <Clock className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>Belum / Parsial ({timeManagement.open.length})</span>
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={timeTab === 'DONE'}
+                  onClick={() => setTimeTab('DONE')}
+                  className={`min-h-[40px] px-3 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 border transition ${
+                    timeTab === 'DONE'
+                      ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
+                      : 'bg-slate-50 dark:bg-zinc-950 border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
+                  }`}
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>Sudah Diterima ({timeManagement.done.length})</span>
+                </button>
+              </div>
+            </div>
+
+            {activeTimeEntries.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-slate-200 dark:border-zinc-800 p-6 text-center text-xs text-slate-500 dark:text-zinc-400">
+                {timeTab === 'ATTENTION'
+                  ? 'Semua FPP aktif masih aman dan belum melewati target waktu.'
+                  : timeTab === 'OPEN'
+                  ? 'Tidak ada FPP yang menunggu penerimaan.'
+                  : 'Belum ada FPP yang selesai diterima pada filter ini.'}
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100 dark:divide-zinc-800 max-h-[380px] overflow-y-auto pr-1">
+                {activeTimeEntries.map(({ purchase, receipt, time }) => {
+                  const pendingItemNames = (purchase.items || [])
+                    .filter((it) => Boolean(it.namaBarang?.trim()) && !it.diterima)
+                    .map((it) => it.namaBarang.trim());
+                  const urgencyClass =
+                    time.urgency === 'overdue'
+                      ? 'bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 border-red-200 dark:border-red-900'
+                      : time.urgency === 'warning'
+                      ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900'
+                      : time.urgency === 'done'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900'
+                      : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border-slate-200 dark:border-zinc-700';
+
+                  return (
+                    <button
+                      key={purchase.id}
+                      type="button"
+                      onClick={() => onOpenPurchase(purchase)}
+                      className="w-full py-3 px-2 -mx-2 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-left transition"
+                    >
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono text-xs sm:text-sm font-semibold text-slate-900 dark:text-white">
+                            {purchase.nomor || 'Draft'}
+                          </span>
+                          <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                            {getOwnerLabel(purchase)} &bull; {purchase.tanggal ? formatShortDate(purchase.tanggal) : '-'}
+                          </span>
+                          {purchase.jenis && (
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300">
+                              {purchase.jenis}
+                            </span>
+                          )}
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border ${urgencyClass}`}>
+                            {time.badgeText}
+                          </span>
+                        </div>
+
+                        {receipt.state !== 'complete' && pendingItemNames.length > 0 ? (
+                          <div className="text-xs text-slate-600 dark:text-zinc-400 truncate">
+                            <span className="font-medium text-slate-700 dark:text-zinc-300">
+                              Belum diterima ({pendingItemNames.length}):
+                            </span>{' '}
+                            {pendingItemNames.slice(0, 2).join(', ')}
+                            {pendingItemNames.length > 2 ? ` +${pendingItemNames.length - 2} lainnya` : ''}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-slate-500 dark:text-zinc-400 truncate">
+                            {time.detailText}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
+                        <div className="text-left sm:text-right">
+                          <div className="text-xs font-semibold tabular-nums text-slate-900 dark:text-white">
+                            {receipt.receivedItems}/{receipt.totalItems} barang
+                          </div>
+                          <div className="text-[11px] tabular-nums text-slate-500 dark:text-zinc-400">
+                            {formatRupiah(getPurchaseTotal(purchase))}
+                          </div>
+                        </div>
+                        <ArrowUpRight className="w-4 h-4 text-slate-400 shrink-0" aria-hidden="true" />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </section>
 
           {/* Middle Row: Jenis Distribution + Rekap Pemohon */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">

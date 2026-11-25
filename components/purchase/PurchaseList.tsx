@@ -2,7 +2,11 @@
 
 import React, { useState, useMemo } from 'react';
 import { PurchaseRequisition, PurchaseJenis } from '@/types/purchase';
-import { deletePurchase, getPurchaseReceiptStats } from '@/lib/purchaseService';
+import {
+  deletePurchase,
+  getPurchaseReceiptStats,
+  getPurchaseTimeControl,
+} from '@/lib/purchaseService';
 import {
   Search,
   Plus,
@@ -129,6 +133,7 @@ export default function PurchaseList({
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'OPEN' | 'OVERDUE' | 'DONE'>('ALL');
   const [localSelectedUser, setLocalSelectedUser] = useState<string>('ALL');
 
   const selectedUser = propSelectedUser !== undefined ? propSelectedUser : localSelectedUser;
@@ -196,6 +201,21 @@ export default function PurchaseList({
         if (!matchesUser) return false;
       }
 
+      // 1b. Filter status penerimaan / tenggat waktu
+      if (statusFilter !== 'ALL') {
+        const receipt = getPurchaseReceiptStats(purchase);
+        const time = getPurchaseTimeControl(purchase);
+        if (statusFilter === 'OPEN' && receipt.state !== 'pending' && receipt.state !== 'partial') {
+          return false;
+        }
+        if (statusFilter === 'OVERDUE' && time.urgency !== 'overdue' && time.urgency !== 'warning') {
+          return false;
+        }
+        if (statusFilter === 'DONE' && receipt.state !== 'complete') {
+          return false;
+        }
+      }
+
       // 2. Filter kata kunci pencarian
       const query = searchQuery.trim().toLocaleLowerCase('id-ID');
       if (!query) return true;
@@ -209,7 +229,7 @@ export default function PurchaseList({
         ...purchase.items.flatMap((item) => [item.namaBarang, item.supplier]),
       ].some((value) => value?.toLocaleLowerCase('id-ID').includes(query));
     });
-  }, [purchases, selectedUser, searchQuery]);
+  }, [purchases, selectedUser, searchQuery, statusFilter]);
 
   
 
@@ -270,6 +290,31 @@ export default function PurchaseList({
           </select>
         </div>
       </div>
+      {/* Quick Status & Time Filter Pills */}
+      <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filter status penerimaan">
+        {(
+          [
+            { id: 'ALL', label: 'Semua' },
+            { id: 'OPEN', label: 'Belum / Parsial' },
+            { id: 'OVERDUE', label: 'Perlu Pantau' },
+            { id: 'DONE', label: 'Diterima' },
+          ] as const
+        ).map((pill) => (
+          <button
+            key={pill.id}
+            type="button"
+            onClick={() => setStatusFilter(pill.id)}
+            className={`min-h-[36px] sm:min-h-0 px-3 sm:px-2.5 py-1 rounded-full text-xs sm:text-[11px] font-medium border transition ${
+              statusFilter === pill.id
+                ? 'bg-slate-900 dark:bg-white border-slate-900 dark:border-white text-white dark:text-black'
+                : 'bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            {pill.label}
+          </button>
+        ))}
+      </div>
+
       {/* LIST / TABLE */}
       <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl sm:rounded-lg overflow-hidden shadow-sm">
         {filteredPurchases.length === 0 ? (
@@ -322,6 +367,7 @@ export default function PurchaseList({
                   : '-';
 
                 const receipt = getPurchaseReceiptStats(item);
+                const time = getPurchaseTimeControl(item);
                 const isCancelled = receipt.state === 'cancelled';
 
                 return (
@@ -336,8 +382,23 @@ export default function PurchaseList({
                           <div className={`font-mono text-sm font-semibold truncate ${isCancelled ? 'line-through text-slate-400 dark:text-zinc-500' : 'text-slate-900 dark:text-white'}`}>
                             {item.nomor || 'Draft'}
                           </div>
-                          <div className="text-xs text-slate-500 dark:text-zinc-400">
-                            {item.dimintaOleh || 'Tanpa pemohon'} &bull; {shortDate}
+                          <div className="text-xs text-slate-500 dark:text-zinc-400 flex items-center gap-1.5 flex-wrap">
+                            <span>{item.dimintaOleh || 'Tanpa pemohon'} &bull; {shortDate}</span>
+                            {!isCancelled && (
+                              <span
+                                className={`font-medium ${
+                                  time.urgency === 'overdue'
+                                    ? 'text-red-600 dark:text-red-400'
+                                    : time.urgency === 'warning'
+                                    ? 'text-amber-600 dark:text-amber-400'
+                                    : time.urgency === 'done'
+                                    ? 'text-emerald-600 dark:text-emerald-400'
+                                    : 'text-slate-500 dark:text-zinc-400'
+                                }`}
+                              >
+                                &bull; {time.badgeText}
+                              </span>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">

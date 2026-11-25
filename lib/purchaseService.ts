@@ -365,3 +365,139 @@ export function getPurchaseReceiptStats(purchase: PurchaseRequisition): {
 
   return { state: 'pending', receivedItems: 0, totalItems };
 }
+
+
+export type PurchaseTimeUrgency = 'overdue' | 'warning' | 'ontrack' | 'done' | 'cancelled';
+
+export interface PurchaseTimeControl {
+  urgency: PurchaseTimeUrgency;
+  targetDays: number;
+  elapsedDays: number;
+  leadTimeDays: number | null;
+  overdueDays: number;
+  badgeText: string;
+  detailText: string;
+}
+
+function parseIsoDateLocal(dateStr?: string): Date | null {
+  if (!dateStr) return null;
+  const parts = dateStr.slice(0, 10).split('-').map(Number);
+  if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return null;
+  const d = new Date(parts[0], parts[1] - 1, parts[2]);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+export function getTargetDaysForJenis(jenis?: PurchaseJenis): number {
+  if (jenis === 'Segera') return 2;
+  if (jenis === 'Non Rutin') return 5;
+  return 7;
+}
+
+export function getPurchaseTimeControl(purchase: PurchaseRequisition): PurchaseTimeControl {
+  const receipt = getPurchaseReceiptStats(purchase);
+  const targetDays = getTargetDaysForJenis(purchase.jenis);
+  const docDate = parseIsoDateLocal(purchase.tanggal);
+  const todayDate = parseIsoDateLocal(todayInJakarta()) || new Date();
+
+  if (receipt.state === 'cancelled') {
+    return {
+      urgency: 'cancelled',
+      targetDays,
+      elapsedDays: 0,
+      leadTimeDays: null,
+      overdueDays: 0,
+      badgeText: 'Dibatalkan',
+      detailText: 'Formulir dibatalkan',
+    };
+  }
+
+  if (receipt.state === 'complete') {
+    const recvDate = parseIsoDateLocal(purchase.tanggalDiterima);
+    if (docDate && recvDate) {
+      const lead = Math.max(0, Math.round((recvDate.getTime() - docDate.getTime()) / 86400000));
+      return {
+        urgency: 'done',
+        targetDays,
+        elapsedDays: lead,
+        leadTimeDays: lead,
+        overdueDays: 0,
+        badgeText: `Selesai ${lead} hari`,
+        detailText: `Diterima lengkap dalam ${lead} hari`,
+      };
+    }
+    return {
+      urgency: 'done',
+      targetDays,
+      elapsedDays: 0,
+      leadTimeDays: null,
+      overdueDays: 0,
+      badgeText: 'Selesai',
+      detailText: 'Semua barang sudah diterima',
+    };
+  }
+
+  if (!docDate) {
+    return {
+      urgency: 'ontrack',
+      targetDays,
+      elapsedDays: 0,
+      leadTimeDays: null,
+      overdueDays: 0,
+      badgeText: 'Baru',
+      detailText: 'Tanggal pengajuan belum diisi',
+    };
+  }
+
+  const elapsedDays = Math.round((todayDate.getTime() - docDate.getTime()) / 86400000);
+
+  if (elapsedDays < 0) {
+    const future = Math.abs(elapsedDays);
+    return {
+      urgency: 'ontrack',
+      targetDays,
+      elapsedDays: 0,
+      leadTimeDays: null,
+      overdueDays: 0,
+      badgeText: `${future} hari lagi`,
+      detailText: `Dijadwalkan ${future} hari lagi`,
+    };
+  }
+
+  const overdueDays = Math.max(0, elapsedDays - targetDays);
+
+  if (overdueDays > 0) {
+    return {
+      urgency: 'overdue',
+      targetDays,
+      elapsedDays,
+      leadTimeDays: null,
+      overdueDays,
+      badgeText: `Terlambat ${overdueDays} hari`,
+      detailText: `Berjalan ${elapsedDays} hari (target ${targetDays} hari)`,
+    };
+  }
+
+  const warningThreshold = Math.max(1, targetDays - 1);
+  if (elapsedDays >= warningThreshold) {
+    const sisa = targetDays - elapsedDays;
+    return {
+      urgency: 'warning',
+      targetDays,
+      elapsedDays,
+      leadTimeDays: null,
+      overdueDays: 0,
+      badgeText: sisa === 0 ? `Batas hari ini (${elapsedDays}h)` : `Sisa ${sisa} hari`,
+      detailText: `Berjalan ${elapsedDays} dari target ${targetDays} hari`,
+    };
+  }
+
+  return {
+    urgency: 'ontrack',
+    targetDays,
+    elapsedDays,
+    leadTimeDays: null,
+    overdueDays: 0,
+    badgeText: elapsedDays === 0 ? 'Hari ini' : `Berjalan ${elapsedDays} hari`,
+    detailText: `Target penerimaan ${targetDays} hari`,
+  };
+}
