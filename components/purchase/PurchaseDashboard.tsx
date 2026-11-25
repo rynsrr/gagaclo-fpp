@@ -12,6 +12,7 @@ import {
   Plus,
   Users,
   Wallet,
+  X,
 } from 'lucide-react';
 
 interface PurchaseDashboardProps {
@@ -24,6 +25,7 @@ interface PurchaseDashboardProps {
 }
 
 type PeriodFilter = 'ALL' | 'MONTH' | '30D';
+type StatusCardFilter = 'NONE' | 'ACTIVE' | 'PENDING_PARTIAL' | 'COMPLETE';
 
 function getPurchaseTotal(purchase: PurchaseRequisition): number {
   if (typeof purchase.totalTaksiran === 'number' && purchase.totalTaksiran > 0) {
@@ -63,6 +65,11 @@ export default function PurchaseDashboard({
   onAddNew,
 }: PurchaseDashboardProps) {
   const [period, setPeriod] = useState<PeriodFilter>('ALL');
+  const [statusCardFilter, setStatusCardFilter] = useState<StatusCardFilter>('NONE');
+
+  const toggleStatusCard = (next: StatusCardFilter) => {
+    setStatusCardFilter((prev) => (prev === next ? 'NONE' : next));
+  };
 
   const filteredPurchases = useMemo(() => {
     const now = new Date();
@@ -214,6 +221,32 @@ export default function PurchaseDashboard({
     };
   }, [filteredPurchases]);
 
+  const statusFilteredPurchases = useMemo(() => {
+    if (statusCardFilter === 'NONE') return [];
+    return [...filteredPurchases]
+      .filter((p) => {
+        const { state } = getPurchaseReceiptStats(p);
+        if (statusCardFilter === 'ACTIVE') return state !== 'cancelled';
+        if (statusCardFilter === 'PENDING_PARTIAL') return state === 'pending' || state === 'partial';
+        if (statusCardFilter === 'COMPLETE') return state === 'complete';
+        return false;
+      })
+      .sort((a, b) => {
+        const da = (b.tanggal || b.updatedAt || '').localeCompare(a.tanggal || a.updatedAt || '');
+        if (da !== 0) return da;
+        return (b.nomor || '').localeCompare(a.nomor || '');
+      });
+  }, [filteredPurchases, statusCardFilter]);
+
+  const statusCardTitle =
+    statusCardFilter === 'ACTIVE'
+      ? 'Daftar FPP Aktif'
+      : statusCardFilter === 'PENDING_PARTIAL'
+      ? 'Daftar FPP Belum / Parsial Diterima'
+      : statusCardFilter === 'COMPLETE'
+      ? 'Daftar FPP Sudah Diterima'
+      : '';
+
   const periodOptions: Array<{ value: PeriodFilter; label: string }> = [
     { value: 'ALL', label: 'Semua' },
     { value: 'MONTH', label: 'Bulan Ini' },
@@ -310,7 +343,16 @@ export default function PurchaseDashboard({
         <>
           {/* KPI Summary Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <div className="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm">
+            <button
+              type="button"
+              aria-pressed={statusCardFilter === 'ACTIVE'}
+              onClick={() => toggleStatusCard('ACTIVE')}
+              className={`text-left rounded-2xl border p-4 shadow-sm transition active:scale-[0.98] ${
+                statusCardFilter === 'ACTIVE'
+                  ? 'border-slate-900 dark:border-white ring-2 ring-slate-900/15 dark:ring-white/20 bg-slate-50 dark:bg-zinc-800/80'
+                  : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-slate-400 dark:hover:border-zinc-600'
+              }`}
+            >
               <div className="flex items-center justify-between text-slate-500 dark:text-zinc-400">
                 <span className="text-[11px] font-semibold uppercase tracking-wider">FPP Aktif</span>
                 <FileText className="w-4 h-4 shrink-0" aria-hidden="true" />
@@ -322,7 +364,7 @@ export default function PurchaseDashboard({
                 {stats.receivedItemsTotal}/{stats.totalItems} barang diterima
                 {stats.cancelledCount > 0 ? ` • ${stats.cancelledCount} batal` : ''}
               </div>
-            </div>
+            </button>
 
             <div className="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm">
               <div className="flex items-center justify-between text-slate-500 dark:text-zinc-400">
@@ -337,7 +379,16 @@ export default function PurchaseDashboard({
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm">
+            <button
+              type="button"
+              aria-pressed={statusCardFilter === 'PENDING_PARTIAL'}
+              onClick={() => toggleStatusCard('PENDING_PARTIAL')}
+              className={`text-left rounded-2xl border p-4 shadow-sm transition active:scale-[0.98] ${
+                statusCardFilter === 'PENDING_PARTIAL'
+                  ? 'border-amber-500 dark:border-amber-400 ring-2 ring-amber-500/20 bg-amber-50/50 dark:bg-amber-950/30'
+                  : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-amber-400 dark:hover:border-amber-500/70'
+              }`}
+            >
               <div className="flex items-center justify-between text-amber-600 dark:text-amber-400">
                 <span className="text-[11px] font-semibold uppercase tracking-wider">Belum / Parsial</span>
                 <Clock className="w-4 h-4 shrink-0" aria-hidden="true" />
@@ -350,9 +401,18 @@ export default function PurchaseDashboard({
                   ? `${stats.partialCount} diterima sebagian`
                   : 'Menunggu penerimaan'}
               </div>
-            </div>
+            </button>
 
-            <div className="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm">
+            <button
+              type="button"
+              aria-pressed={statusCardFilter === 'COMPLETE'}
+              onClick={() => toggleStatusCard('COMPLETE')}
+              className={`text-left rounded-2xl border p-4 shadow-sm transition active:scale-[0.98] ${
+                statusCardFilter === 'COMPLETE'
+                  ? 'border-emerald-500 dark:border-emerald-400 ring-2 ring-emerald-500/20 bg-emerald-50/50 dark:bg-emerald-950/30'
+                  : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-emerald-400 dark:hover:border-emerald-500/70'
+              }`}
+            >
               <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400">
                 <span className="text-[11px] font-semibold uppercase tracking-wider">Sudah Diterima</span>
                 <CheckCircle2 className="w-4 h-4 shrink-0" aria-hidden="true" />
@@ -363,8 +423,104 @@ export default function PurchaseDashboard({
               <div className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
                 {stats.completionRate}% selesai diterima
               </div>
-            </div>
+            </button>
           </div>
+
+          {/* Drilldown List when a KPI Status Card is clicked */}
+          {statusCardFilter !== 'NONE' && (
+            <section
+              aria-label={statusCardTitle}
+              className="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 sm:p-5 space-y-3 shadow-sm"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
+                    {statusCardTitle} ({statusFilteredPurchases.length})
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-zinc-400">
+                    Ketuk salah satu FPP untuk membuka dokumen
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setStatusCardFilter('NONE')}
+                  aria-label="Tutup daftar filter status"
+                  className="min-h-[40px] px-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs font-medium text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-700 inline-flex items-center gap-1.5 transition shrink-0"
+                >
+                  <X className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>Tutup</span>
+                </button>
+              </div>
+
+              {statusFilteredPurchases.length === 0 ? (
+                <p className="text-xs text-slate-500 dark:text-zinc-400 py-4 text-center">
+                  Tidak ada FPP pada kategori ini.
+                </p>
+              ) : (
+                <div className="divide-y divide-slate-100 dark:divide-zinc-800 max-h-[360px] overflow-y-auto pr-1">
+                  {statusFilteredPurchases.map((item) => {
+                    const receipt = getPurchaseReceiptStats(item);
+                    const firstItem = item.items?.[0]?.namaBarang || 'Tanpa nama barang';
+                    const extraCount = Math.max(0, (item.items?.length || 0) - 1);
+                    const badge =
+                      receipt.state === 'complete'
+                        ? {
+                            label: 'Diterima',
+                            className: 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300',
+                          }
+                        : receipt.state === 'partial'
+                        ? {
+                            label: `${receipt.receivedItems}/${receipt.totalItems} Diterima`,
+                            className: 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300',
+                          }
+                        : {
+                            label: 'Menunggu',
+                            className: 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300',
+                          };
+
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => onOpenPurchase(item)}
+                        className="w-full min-h-[56px] py-2.5 px-2 -mx-2 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-800/60 flex items-center justify-between gap-3 text-left transition"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-mono text-xs sm:text-sm font-semibold text-slate-900 dark:text-white">
+                              {item.nomor || 'Draft'}
+                            </span>
+                            <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                              {item.tanggal ? formatShortDate(item.tanggal) : '-'}
+                            </span>
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${badge.className}`}>
+                              {badge.label}
+                            </span>
+                          </div>
+                          <div className="text-xs text-slate-600 dark:text-zinc-400 truncate mt-0.5">
+                            {firstItem}
+                            {extraCount > 0 ? ` (+${extraCount} lainnya)` : ''}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <div className="text-right">
+                            <div className="text-xs font-semibold tabular-nums text-slate-900 dark:text-white">
+                              {formatRupiah(getPurchaseTotal(item))}
+                            </div>
+                            <div className="text-[11px] text-slate-500 dark:text-zinc-400">
+                              {getOwnerLabel(item)}
+                            </div>
+                          </div>
+                          <ArrowUpRight className="w-4 h-4 text-slate-400 shrink-0" aria-hidden="true" />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          )}
 
           {/* Middle Row: Jenis Distribution + Rekap Pemohon */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
