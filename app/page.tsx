@@ -17,6 +17,9 @@ import { deleteAttachment } from '@/lib/attachmentUpload';
 import PurchaseDocument from '@/components/purchase/PurchaseDocument';
 import PurchaseList from '@/components/purchase/PurchaseList';
 import PurchaseSummary from '@/components/purchase/PurchaseSummary';
+import PurchaseDashboard from '@/components/purchase/PurchaseDashboard';
+import MobilePurchaseEditor from '@/components/purchase/MobilePurchaseEditor';
+import MobileA4Preview from '@/components/purchase/MobileA4Preview';
 import R2Quota from '@/components/purchase/R2Quota';
 import PasswordModal from '@/components/purchase/PasswordModal';
 import {
@@ -45,9 +48,16 @@ import {
   Trash2,
   Lock,
   UserCheck,
+  LayoutDashboard,
+  FileEdit,
+  FileText,
+  List,
+  Ban,
+  RotateCcw,
 } from 'lucide-react';
 
-type ActiveTab = 'FORM';
+type ActiveTab = 'FORM' | 'DASHBOARD';
+type MobileTab = 'DASHBOARD' | 'FORM' | 'PREVIEW' | 'LIST';
 
 function checkIsOwner(purchase?: PurchaseRequisition | null, user?: string | null): boolean {
   if (!user || !purchase) return false;
@@ -99,6 +109,7 @@ function createBlankPurchase(purchases: PurchaseRequisition[], user?: string | n
 
 export default function MainPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('FORM');
+  const [mobileTab, setMobileTab] = useState<MobileTab>('FORM');
   const [purchases, setPurchases] = useState<PurchaseRequisition[]>([]);
   
   // Hitung penggunaan kuota database Supabase (Batas Free Tier: 500 MB)
@@ -411,6 +422,12 @@ export default function MainPage() {
     return () => window.removeEventListener('beforeunload', beforeUnload);
   }, [dirty]);
 
+  const scrollToTop = () => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   const handleAddNewFPP = () => {
     if (!currentUser) {
       setIsPasswordModalOpen(true);
@@ -419,6 +436,8 @@ export default function MainPage() {
     if (!confirmDiscard()) return;
     openPurchase(createBlankPurchase(purchases, currentUser), false);
     setActiveTab('FORM');
+    setMobileTab('FORM');
+    scrollToTop();
     setSaveNotice('Formulir baru siap diisi.');
     setTimeout(() => setSaveNotice(null), 3000);
   };
@@ -491,6 +510,59 @@ export default function MainPage() {
     if (!confirmDiscard()) return;
     openPurchase(item);
     setActiveTab('FORM');
+    setMobileTab('FORM');
+    scrollToTop();
+  };
+
+  const handleToggleCancelPurchase = async (targetItem?: PurchaseRequisition) => {
+    const item = targetItem || currentPurchase;
+    if (!currentUser) {
+      setIsPasswordModalOpen(true);
+      return;
+    }
+    if (!checkIsOwner(item, currentUser)) {
+      alert(
+        `Anda hanya dapat membatalkan FPP milik akun Anda (${formatUserName(currentUser)}).`
+      );
+      return;
+    }
+
+    const isCurrentlyCancelled = item.status === 'Dibatalkan';
+    const confirmMsg = isCurrentlyCancelled
+      ? `Aktifkan kembali formulir ${item.nomor || 'ini'}?`
+      : `Batalkan (Cancel) formulir ${item.nomor || 'ini'}? Data tetap tersimpan di arsip dengan status Dibatalkan.`;
+    if (!confirm(confirmMsg)) return;
+
+    const updated: PurchaseRequisition = {
+      ...item,
+      status: isCurrentlyCancelled ? 'Diajukan' : 'Dibatalkan',
+      updatedAt: new Date().toISOString(),
+    };
+
+    const existsInSaved = purchases.some((p) => p.id === updated.id);
+    if (existsInSaved) {
+      setIsSaving(true);
+      const res = await savePurchase(updated);
+      setIsSaving(false);
+      if (!res.success) {
+        alert('Gagal memperbarui status pembatalan FPP.');
+        return;
+      }
+      setPurchases((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+      if (currentPurchase.id === updated.id) {
+        setCurrentPurchase(updated);
+        setSavedFingerprint(fingerprint(updated));
+      }
+    } else if (currentPurchase.id === updated.id) {
+      setCurrentPurchase(updated);
+    }
+
+    setSaveNotice(
+      isCurrentlyCancelled
+        ? `Formulir ${updated.nomor} diaktifkan kembali.`
+        : `Formulir ${updated.nomor} ditandai Dibatalkan.`
+    );
+    setTimeout(() => setSaveNotice(null), 3500);
   };
 
   const handleDeletePurchase = async (id: string, nomor: string) => {
@@ -525,7 +597,11 @@ export default function MainPage() {
     const nextNomor = generateNextNomor(purchases, peminta);
     const dup = duplicatePurchase(item, nextNomor, todayInJakarta());
     dup.dimintaOleh = peminta;
+    dup.status = 'Draft';
     openPurchase(dup, false);
+    setActiveTab('FORM');
+    setMobileTab('FORM');
+    scrollToTop();
     setSaveNotice(`Salinan ${dup.nomor} siap diedit.`);
     setTimeout(() => setSaveNotice(null), 3000);
   };
@@ -567,31 +643,124 @@ export default function MainPage() {
     if (!confirmDiscard()) return;
     openPurchase(item);
     setActiveTab('FORM');
+    setMobileTab('PREVIEW');
+    scrollToTop();
   };
 
+  const canEditCurrent = Boolean(currentUser) && checkIsOwner(currentPurchase, currentUser) && !isLoading;
+  const isCurrentCancelled = currentPurchase.status === 'Dibatalkan';
+
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-[#08090C] text-slate-900 dark:text-[#F5F5F7] flex flex-col transition-colors duration-200">
+    <div className="min-h-[100dvh] bg-slate-100 dark:bg-[#08090C] text-slate-900 dark:text-[#F5F5F7] flex flex-col transition-colors duration-200">
       {/* Top Navigation Bar (Hidden during print) */}
-      <header className="no-print sticky top-0 z-40 bg-white/90 dark:bg-[#08090C]/90 backdrop-blur-xl border-b border-slate-200 dark:border-white/10 px-4 py-3">
-        <div className="max-w-7xl mx-auto space-y-3">
+      <header className="no-print sticky top-0 z-40 bg-white/95 dark:bg-[#08090C]/95 backdrop-blur-md border-b border-slate-200 dark:border-white/10 px-3 sm:px-4 py-2 sm:py-3">
+        {/* Mobile Compact Header (< md) */}
+        <div className="md:hidden flex items-center justify-between gap-2 max-w-7xl mx-auto">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-2xl leading-none font-bold tracking-tight text-black dark:text-white shrink-0">
+              FPP
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setPasswordModalTab('SELECT');
+                setIsPasswordModalOpen(true);
+              }}
+              className="min-h-[40px] max-w-[140px] px-2.5 rounded-xl text-xs font-medium bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-zinc-700 inline-flex items-center gap-1.5 truncate active:scale-95 transition"
+              aria-label={currentUser ? `Akun aktif ${currentUser}, ketuk untuk ganti` : 'Pilih akun editor'}
+            >
+              {currentUser ? (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                  <span className="font-semibold capitalize truncate">{currentUser}</span>
+                </>
+              ) : (
+                <>
+                  <UserCheck className="w-3.5 h-3.5 text-slate-500 shrink-0" aria-hidden="true" />
+                  <span className="truncate">Pilih Akun</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              disabled={isLoading}
+              onClick={handleAddNewFPP}
+              aria-label="Buat formulir baru"
+              className="min-h-[44px] min-w-[44px] rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-200 flex items-center justify-center active:scale-95 transition disabled:opacity-50"
+            >
+              <Plus className="w-4 h-4" aria-hidden="true" />
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSavePurchase}
+              disabled={isSaving || isLoading}
+              aria-label={isSaving ? 'Menyimpan...' : 'Simpan FPP'}
+              aria-busy={isSaving}
+              className="relative min-h-[44px] px-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-black text-xs font-semibold inline-flex items-center gap-1.5 shadow-sm active:scale-95 transition disabled:opacity-50"
+            >
+              <Save className="w-4 h-4" aria-hidden="true" />
+              <span>{isSaving ? '...' : 'Simpan'}</span>
+              {dirty && !isSaving && (
+                <span className="w-2 h-2 rounded-full bg-amber-400 dark:bg-amber-500" aria-label="Perubahan belum disimpan" />
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={theme === 'dark' ? 'Ganti ke Light Mode' : 'Ganti ke Dark Mode'}
+              className="min-h-[44px] min-w-[44px] rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 flex items-center justify-center active:scale-95 transition"
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4 text-slate-200" aria-hidden="true" /> : <Moon className="w-4 h-4 text-slate-700" aria-hidden="true" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Desktop & Tablet Header (>= md) */}
+        <div className="hidden md:block max-w-7xl mx-auto">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            {/* Logo & Company Title */}
-            <div className="flex items-center space-x-3">
+            {/* Logo, Company Title & View Switcher */}
+            <div className="flex items-center gap-3">
               <div className="flex items-center">
-                <span className="text-[28px] sm:text-[32px] leading-none font-bold tracking-tight text-black dark:text-white">
+                <span className="text-[30px] leading-none font-bold tracking-tight text-black dark:text-white">
                   FPP
                 </span>
               </div>
-              <div className="hidden sm:block h-6 w-px bg-slate-200 dark:bg-zinc-800" />
-              <div className="hidden sm:flex items-center space-x-2">
-                <span className="text-sm sm:text-base font-semibold uppercase tracking-wide text-slate-700 dark:text-zinc-200">
-                  FORMULIR PERMOHONAN PEMBELIAN
-                </span>
-              </div>
+              <div className="h-6 w-px bg-slate-200 dark:bg-zinc-800" />
+              <nav aria-label="Navigasi utama" className="inline-flex items-center rounded-xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-1">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('FORM')}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                    activeTab === 'FORM'
+                      ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-sm'
+                      : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <FileEdit className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>Formulir</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('DASHBOARD')}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                    activeTab === 'DASHBOARD'
+                      ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-sm'
+                      : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <LayoutDashboard className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>Dashboard</span>
+                </button>
+              </nav>
             </div>
 
             {/* Right Status & Actions */}
-            <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-2.5">
+            <div className="flex flex-wrap items-center justify-end gap-2">
               {/* Status Akun Editor */}
               {!currentUser ? (
                 <button
@@ -603,12 +772,12 @@ export default function MainPage() {
                   className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-200 border border-slate-300 dark:border-zinc-700 transition"
                   title="Klik untuk memilih akun Anda"
                 >
-                  <UserCheck className="w-3.5 h-3.5 text-slate-500 dark:text-zinc-400" />
+                  <UserCheck className="w-3.5 h-3.5 text-slate-500 dark:text-zinc-400" aria-hidden="true" />
                   <span>Pilih Akun</span>
                 </button>
               ) : (
                 <div className="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 dark:bg-zinc-800/80 text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-zinc-700">
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-500 dark:bg-zinc-400" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                   <span className="font-semibold capitalize">{currentUser}</span>
                   <div className="flex items-center space-x-1.5 border-l border-slate-300 dark:border-zinc-700 pl-2 text-[11px] text-slate-500 dark:text-zinc-400">
                     <button
@@ -657,9 +826,34 @@ export default function MainPage() {
                   aria-label="Formulir baru"
                   title="Buat formulir baru dengan nomor urut berikutnya"
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Baru</span>
+                  <Plus className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>Baru</span>
                 </button>
+                {canEditCurrent && activeTab === 'FORM' && (
+                  <button
+                    type="button"
+                    disabled={isSaving || isLoading}
+                    onClick={() => handleToggleCancelPurchase()}
+                    className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border transition text-xs font-medium disabled:opacity-50 ${
+                      isCurrentCancelled
+                        ? 'border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100'
+                        : 'border-red-200 dark:border-red-900/60 bg-white dark:bg-zinc-900 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30'
+                    }`}
+                    title={isCurrentCancelled ? 'Aktifkan kembali formulir ini' : 'Batalkan (Cancel) formulir ini'}
+                  >
+                    {isCurrentCancelled ? (
+                      <>
+                        <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
+                        <span>Aktifkan</span>
+                      </>
+                    ) : (
+                      <>
+                        <Ban className="w-3.5 h-3.5" aria-hidden="true" />
+                        <span>Cancel</span>
+                      </>
+                    )}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => window.print()}
@@ -667,8 +861,8 @@ export default function MainPage() {
                   aria-label="Cetak / PDF"
                   title="Cetak langsung atau simpan sebagai PDF A4 (Pasti 1 Halaman)"
                 >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Cetak</span>
+                  <Printer className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>Cetak</span>
                 </button>
 
                 <button
@@ -680,28 +874,30 @@ export default function MainPage() {
                   aria-busy={isSaving}
                   title="Simpan formulir ke database Supabase dan penyimpanan lokal"
                 >
-                  <Save className="w-3.5 h-3.5" />
+                  <Save className="w-3.5 h-3.5" aria-hidden="true" />
                   <span>{isSaving ? 'Menyimpan...' : 'Simpan'}</span>
                 </button>
               </div>
 
               {/* Theme Toggle */}
               <button
+                type="button"
                 onClick={toggleTheme}
+                aria-label={theme === 'dark' ? 'Ganti ke Light Mode' : 'Ganti ke Dark Mode'}
                 className="p-1.5 rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white transition"
                 title={theme === 'dark' ? 'Ganti ke Light Mode' : 'Ganti ke Dark Mode'}
               >
-                {theme === 'dark' ? <Sun className="w-4 h-4 text-slate-200" /> : <Moon className="w-4 h-4 text-slate-700" />}
+                {theme === 'dark' ? <Sun className="w-4 h-4 text-slate-200" aria-hidden="true" /> : <Moon className="w-4 h-4 text-slate-700" aria-hidden="true" />}
               </button>
 
               {/* Quota Indicators */}
-              <div className="hidden lg:flex items-center gap-1.5">
+              <div className="hidden xl:flex items-center gap-1.5">
                 <div
                   className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-[11px] text-slate-500 dark:text-zinc-400 bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 select-none"
                   title={`Penggunaan Kuota Database: ${quotaUsageText} (${purchases.length} FPP tersimpan)`}
                   aria-label={`Kuota database ${quotaUsageText}`}
                 >
-                  <Database className="w-3 h-3 text-slate-400" />
+                  <Database className="w-3 h-3 text-slate-400" aria-hidden="true" />
                   <span className="font-mono">{quotaUsageText}</span>
                   <span className={`w-1.5 h-1.5 rounded-full ${isTableReady ? 'bg-slate-400 dark:bg-zinc-500' : 'bg-amber-400'}`} />
                 </div>
@@ -713,14 +909,55 @@ export default function MainPage() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 p-3 sm:p-6 max-w-7xl w-full mx-auto flex flex-col items-center">
-        {activeTab === 'FORM' && (
-          <div className="w-full grid grid-cols-1 xl:grid-cols-[minmax(0,210mm)_minmax(0,1fr)] gap-6 items-start print:block">
-            <div className="w-full max-w-[210mm] mx-auto space-y-3">
+      <main className="flex-1 px-3 pt-3 pb-24 md:p-6 max-w-7xl w-full mx-auto flex flex-col items-center print:p-0">
+        {/* Desktop/Tablet Dashboard View */}
+        {activeTab === 'DASHBOARD' && (
+          <div className="hidden md:block no-print w-full">
+            <PurchaseDashboard
+              purchases={purchases}
+              selectedUser={selectedUser}
+              onSelectUser={setSelectedUser}
+              availableUsers={availableUsers}
+              onOpenPurchase={(item) => handleSelectForEdit(item)}
+              onAddNew={handleAddNewFPP}
+            />
+          </div>
+        )}
+
+        {/* Mobile Dashboard Tab */}
+        {mobileTab === 'DASHBOARD' && (
+          <div className="md:hidden no-print w-full">
+            <PurchaseDashboard
+              purchases={purchases}
+              selectedUser={selectedUser}
+              onSelectUser={setSelectedUser}
+              availableUsers={availableUsers}
+              onOpenPurchase={(item) => {
+                if (currentUser && checkIsOwner(item, currentUser)) {
+                  handleSelectForEdit(item);
+                } else {
+                  handleSelectForPreview(item);
+                }
+              }}
+              onAddNew={handleAddNewFPP}
+            />
+          </div>
+        )}
+
+        {/* Form + List Workspace (always mounted for print, visibility controlled per breakpoint/tab) */}
+        <div
+          className={`w-full grid grid-cols-1 xl:grid-cols-[minmax(0,210mm)_minmax(0,1fr)] gap-6 items-start print:block ${
+            activeTab === 'DASHBOARD' ? 'md:hidden print:block' : ''
+          }`}
+        >
+          {/* Left Column: Editor (Mobile) + A4 Document (Desktop/Tablet/Mobile Preview/Print) */}
+          <div className="w-full max-w-[210mm] mx-auto space-y-3 print:max-w-none print:space-y-0">
+            {/* Access / Ownership Banner (shown on mobile FORM & PREVIEW, and desktop FORM) */}
+            <div className={mobileTab === 'FORM' || mobileTab === 'PREVIEW' ? 'block' : 'hidden md:block'}>
               {!currentUser ? (
-                <div className="no-print flex items-center justify-between p-2.5 rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-slate-700 dark:text-zinc-300 shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <UserCheck className="w-4 h-4 text-slate-500 shrink-0" />
+                <div className="no-print flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 p-3 rounded-xl sm:rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-slate-700 dark:text-zinc-300 shadow-sm">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <UserCheck className="w-4 h-4 text-slate-500 shrink-0" aria-hidden="true" />
                     <span>Dokumen dalam <strong>Mode Lihat</strong>. Pilih akun editor untuk mulai mengedit.</span>
                   </div>
                   <button
@@ -729,127 +966,204 @@ export default function MainPage() {
                       setPasswordModalTab('SELECT');
                       setIsPasswordModalOpen(true);
                     }}
-                    className="px-3 py-1 rounded-md bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-black font-medium text-xs transition shrink-0"
+                    className="min-h-[40px] sm:min-h-0 px-3 py-1.5 sm:py-1 rounded-lg sm:rounded-md bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-black font-medium text-xs transition shrink-0"
                   >
                     Pilih Akun
                   </button>
                 </div>
               ) : !checkIsOwner(currentPurchase, currentUser) ? (
-                <div className="no-print flex items-center justify-between p-2.5 rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-slate-700 dark:text-zinc-300 shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <Lock className="w-4 h-4 text-slate-500 shrink-0" />
+                <div className="no-print flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 p-3 rounded-xl sm:rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-slate-700 dark:text-zinc-300 shadow-sm">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Lock className="w-4 h-4 text-slate-500 shrink-0" aria-hidden="true" />
                     <span>
-                      Dokumen <strong>{currentPurchase.nomor}</strong> dibuat oleh <strong>{currentPurchase.dimintaOleh || 'Akun Lain'}</strong>. Anda masuk sebagai <strong>{formatUserName(currentUser)}</strong> (Hanya baca).
+                      Dokumen <strong>{currentPurchase.nomor}</strong> milik <strong>{currentPurchase.dimintaOleh || 'Akun Lain'}</strong> (Hanya baca).
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => handleDuplicatePurchase(currentPurchase)}
-                    className="px-3 py-1 rounded-md border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-slate-50 text-slate-800 dark:text-zinc-200 font-medium text-xs transition shrink-0"
+                    className="min-h-[40px] sm:min-h-0 px-3 py-1.5 sm:py-1 rounded-lg sm:rounded-md border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-slate-50 text-slate-800 dark:text-zinc-200 font-medium text-xs transition shrink-0"
                     title="Buat salinan formulir ini atas nama Anda"
                   >
                     Salin ke Akun Saya
                   </button>
                 </div>
               ) : null}
-              <PurchaseDocument
-                key={currentPurchase.id || 'current-fpp'}
-                data={currentPurchase}
-                onChange={handleDocumentChange}
-                onSave={handleSavePurchase}
-                onGenerateNomor={handleGenerateNomor}
-                saveNotice={saveNotice}
-                isEditable={Boolean(currentUser) && checkIsOwner(currentPurchase, currentUser) && !isLoading}
-                currentUser={currentUser}
-              />
             </div>
 
-            <div className="no-print min-w-0 space-y-4">
-              {/* Draft perangkat ini (terfilter mengikuti kategori user) */}
-              {filteredDrafts.length > 0 && (
-                <details className="rounded-xl border border-slate-200 dark:border-zinc-800 p-3 text-xs bg-white dark:bg-zinc-900" open>
-                  <summary className="cursor-pointer font-semibold flex items-center justify-between select-none">
-                    <span>
-                      Draft perangkat ini ({filteredDrafts.length})
-                      {selectedUser !== 'ALL' && (
-                        <span className="ml-1 text-slate-500 font-normal">
-                          • {selectedUser}
-                        </span>
-                      )}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleClearAllDrafts}
-                      className="text-[11px] font-normal text-red-500 hover:text-red-700 hover:underline px-1 py-0.5"
-                      title={selectedUser !== 'ALL' ? `Bersihkan semua draft ${selectedUser}` : 'Bersihkan semua draft lokal'}
-                    >
-                      Hapus Semua
-                    </button>
-                  </summary>
-                  <div className="space-y-2 mt-3">
-                    {filteredDrafts.map((draft) => (
-                      <div
-                        key={draft.purchase.id}
-                        className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 dark:border-zinc-800 p-2 hover:bg-slate-50 dark:hover:bg-zinc-800/60 transition group"
-                      >
-                        <button
-                          type="button"
-                          className="flex-1 text-left min-w-0"
-                          onClick={() => {
-                            if (!confirmDiscard()) return;
-                            setCurrentPurchase(draft.purchase);
-                            setSavedFingerprint(
-                              fingerprint(
-                                purchases.find((p) => p.id === draft.purchase.id) || blankBaseline(draft.purchase)
-                              )
-                            );
-                          }}
-                        >
-                          <span className="font-medium text-slate-800 dark:text-zinc-200">{draft.purchase.nomor}</span> •{' '}
-                          <span className="text-slate-600 dark:text-zinc-400">{draft.purchase.items[0]?.namaBarang || 'Belum diisi'}</span>
-                          <span className="block text-slate-500 text-[10px] mt-0.5">
-                            {new Date(draft.savedAt).toLocaleString('id-ID')}
-                          </span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => handleDeleteDraft(draft.purchase.id, draft.purchase.nomor, e)}
-                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition shrink-0"
-                          title="Hapus draft ini dari perangkat"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </details>
-              )}
+            {/* Mobile Native Touch Editor (< md, when mobileTab === 'FORM') */}
+            {mobileTab === 'FORM' && (
+              <div className="md:hidden no-print">
+                <MobilePurchaseEditor
+                  data={currentPurchase}
+                  onChange={handleDocumentChange}
+                  onGenerateNomor={handleGenerateNomor}
+                  onToggleCancel={() => handleToggleCancelPurchase()}
+                  saveNotice={saveNotice}
+                  isEditable={canEditCurrent}
+                  currentUser={currentUser}
+                />
+              </div>
+            )}
 
-              {/* Ringkasan FPP (terfilter mengikuti kategori user) */}
-              <PurchaseSummary purchases={filteredPurchasesByUser} userName={selectedUser} />
-
-              {/* Daftar FPP */}
-              <PurchaseList
-                purchases={purchases}
-                onSelectForEdit={handleSelectForEdit}
-                onSelectForPreview={handleSelectForPreview}
-                onAddNew={handleAddNewFPP}
-                onDelete={handleDeletePurchase}
-                onDuplicate={handleDuplicatePurchase}
-                canEdit={Boolean(currentUser)}
-                canDelete={Boolean(currentUser)}
-                currentUser={currentUser}
-                onRefresh={() => loadData()}
-                selectedUser={selectedUser}
-                onSelectUser={setSelectedUser}
-                availableUsers={availableUsers}
-                userCounts={userCounts}
-                totalAllPurchases={purchases.length}
-              />
+            {/* Physical A4 Document (visible on md+, mobile PREVIEW tab, and ALWAYS in print) */}
+            <div className={mobileTab === 'PREVIEW' ? 'block' : 'hidden md:block print:block'}>
+              <MobileA4Preview onPrint={() => window.print()}>
+                <PurchaseDocument
+                  key={currentPurchase.id || 'current-fpp'}
+                  data={currentPurchase}
+                  onChange={handleDocumentChange}
+                  onSave={handleSavePurchase}
+                  onGenerateNomor={handleGenerateNomor}
+                  onToggleCancel={() => handleToggleCancelPurchase()}
+                  saveNotice={saveNotice}
+                  isEditable={canEditCurrent}
+                  currentUser={currentUser}
+                />
+              </MobileA4Preview>
             </div>
           </div>
-        )}
+
+          {/* Right Column: Drafts, Summary & Purchase List (visible on md+, and mobile LIST tab) */}
+          <div className={`no-print min-w-0 space-y-4 ${mobileTab === 'LIST' ? 'block' : 'hidden md:block'}`}>
+            {/* Draft perangkat ini (terfilter mengikuti kategori user) */}
+            {filteredDrafts.length > 0 && (
+              <details className="rounded-2xl sm:rounded-xl border border-slate-200 dark:border-zinc-800 p-3.5 sm:p-3 text-xs bg-white dark:bg-zinc-900" open>
+                <summary className="cursor-pointer font-semibold flex items-center justify-between select-none min-h-[36px]">
+                  <span>
+                    Draft perangkat ini ({filteredDrafts.length})
+                    {selectedUser !== 'ALL' && (
+                      <span className="ml-1 text-slate-500 font-normal">
+                        • {selectedUser}
+                      </span>
+                    )}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleClearAllDrafts}
+                    className="text-[11px] font-normal text-red-600 dark:text-red-400 hover:underline px-2 py-1"
+                    title={selectedUser !== 'ALL' ? `Bersihkan semua draft ${selectedUser}` : 'Bersihkan semua draft lokal'}
+                  >
+                    Hapus Semua
+                  </button>
+                </summary>
+                <div className="space-y-2 mt-3">
+                  {filteredDrafts.map((draft) => (
+                    <div
+                      key={draft.purchase.id}
+                      className="flex items-center justify-between gap-2 rounded-xl sm:rounded-lg border border-slate-200 dark:border-zinc-800 p-2.5 sm:p-2 hover:bg-slate-50 dark:hover:bg-zinc-800/60 transition group"
+                    >
+                      <button
+                        type="button"
+                        className="flex-1 text-left min-w-0 py-0.5"
+                        onClick={() => {
+                          if (!confirmDiscard()) return;
+                          setCurrentPurchase(draft.purchase);
+                          setSavedFingerprint(
+                            fingerprint(
+                              purchases.find((p) => p.id === draft.purchase.id) || blankBaseline(draft.purchase)
+                            )
+                          );
+                          setMobileTab('FORM');
+                          scrollToTop();
+                        }}
+                      >
+                        <span className="font-medium text-slate-800 dark:text-zinc-200">{draft.purchase.nomor}</span> •{' '}
+                        <span className="text-slate-600 dark:text-zinc-400">{draft.purchase.items[0]?.namaBarang || 'Belum diisi'}</span>
+                        <span className="block text-slate-500 text-[10px] mt-0.5">
+                          {new Date(draft.savedAt).toLocaleString('id-ID')}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteDraft(draft.purchase.id, draft.purchase.nomor, e)}
+                        className="min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 p-1.5 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition shrink-0"
+                        aria-label={`Hapus draft ${draft.purchase.nomor}`}
+                        title="Hapus draft ini dari perangkat"
+                      >
+                        <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" aria-hidden="true" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
+
+            {/* Ringkasan FPP (terfilter mengikuti kategori user) */}
+            <PurchaseSummary purchases={filteredPurchasesByUser} userName={selectedUser} />
+
+            {/* Daftar FPP */}
+            <PurchaseList
+              purchases={purchases}
+              onSelectForEdit={handleSelectForEdit}
+              onSelectForPreview={handleSelectForPreview}
+              onAddNew={handleAddNewFPP}
+              onDelete={handleDeletePurchase}
+              onDuplicate={handleDuplicatePurchase}
+              onToggleCancel={(item) => handleToggleCancelPurchase(item)}
+              canEdit={Boolean(currentUser)}
+              canDelete={Boolean(currentUser)}
+              currentUser={currentUser}
+              onRefresh={() => loadData()}
+              selectedUser={selectedUser}
+              onSelectUser={setSelectedUser}
+              availableUsers={availableUsers}
+              userCounts={userCounts}
+              totalAllPurchases={purchases.length}
+            />
+          </div>
+        </div>
       </main>
+
+      {/* Mobile Bottom Navigation Bar (< md, hidden during print) */}
+      <nav
+        aria-label="Navigasi mobile"
+        className="no-print md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-[#08090C]/95 backdrop-blur-md border-t border-slate-200 dark:border-zinc-800 pb-safe"
+      >
+        <div className="grid grid-cols-4 max-w-lg mx-auto">
+          {(
+            [
+              { id: 'DASHBOARD' as MobileTab, label: 'Dashboard', icon: LayoutDashboard },
+              { id: 'FORM' as MobileTab, label: 'Isi FPP', icon: FileEdit },
+              { id: 'PREVIEW' as MobileTab, label: 'Pratinjau', icon: FileText },
+              { id: 'LIST' as MobileTab, label: 'Daftar', icon: List, badge: purchases.length },
+            ]
+          ).map((tab) => {
+            const Icon = tab.icon;
+            const active = mobileTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => {
+                  setMobileTab(tab.id);
+                  scrollToTop();
+                }}
+                aria-current={active ? 'page' : undefined}
+                className={`relative min-h-[58px] flex flex-col items-center justify-center gap-1 px-1 py-2 text-[11px] font-medium transition active:scale-95 ${
+                  active
+                    ? 'text-slate-900 dark:text-white font-semibold'
+                    : 'text-slate-500 dark:text-zinc-400'
+                }`}
+              >
+                {active && (
+                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-slate-900 dark:bg-white" />
+                )}
+                <div className="relative">
+                  <Icon className="w-5 h-5" aria-hidden="true" />
+                  {typeof tab.badge === 'number' && tab.badge > 0 && (
+                    <span className="absolute -top-1.5 -right-3 min-w-[18px] h-[16px] px-1 rounded-full bg-slate-900 dark:bg-white text-white dark:text-black text-[10px] font-bold flex items-center justify-center tabular-nums">
+                      {tab.badge > 99 ? '99+' : tab.badge}
+                    </span>
+                  )}
+                </div>
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+
       <PasswordModal
         isOpen={isPasswordModalOpen}
         onClose={() => setIsPasswordModalOpen(false)}

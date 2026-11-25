@@ -1,9 +1,19 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Formulir Permohonan Pembelian | PT Gagaclo',
   description: 'Aplikasi Pembuatan & Pencetakan Formulir Permohonan Pembelian (FPP) PT Gagaclo terintegrasi Supabase, GitHub, dan Vercel.',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#08090C' },
+  ],
 };
 
 export default function RootLayout({
@@ -41,7 +51,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-screen bg-slate-50 dark:bg-[#08090C] text-slate-900 dark:text-[#F5F5F7] transition-colors duration-200 selection:bg-slate-900 selection:text-white dark:selection:bg-white dark:selection:text-black">
+      <body className="min-h-[100dvh] bg-slate-50 dark:bg-[#08090C] text-slate-900 dark:text-[#F5F5F7] transition-colors duration-200 selection:bg-slate-900 selection:text-white dark:selection:bg-white dark:selection:text-black">
         {children}
       </body>
     </html>

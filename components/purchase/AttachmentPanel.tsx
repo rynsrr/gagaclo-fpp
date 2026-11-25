@@ -9,10 +9,12 @@ export default function AttachmentPanel({
   photos,
   isEditable,
   onChange,
+  compactMobile = false,
 }: {
   photos: PurchasePhoto[];
   isEditable: boolean;
   onChange: (photos: PurchasePhoto[]) => void;
+  compactMobile?: boolean;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const active = useRef(true);
@@ -92,6 +94,15 @@ export default function AttachmentPanel({
     return () => window.removeEventListener('paste', paste, true);
   }, [isEditable, uploading]);
 
+  useEffect(() => {
+    if (!preview) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPreview(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [preview]);
+
   const move = (index: number, step: number) => {
     const next = [...photos];
     [next[index], next[index + step]] = [next[index + step], next[index]];
@@ -100,7 +111,11 @@ export default function AttachmentPanel({
 
   return (
     <div
-      className="border-x border-b border-black p-3 bg-white flex-1 flex flex-col justify-between gap-2.5 min-h-[110mm]"
+      className={
+        compactMobile
+          ? 'flex-1 flex flex-col gap-3'
+          : 'border-x border-b border-black p-3 bg-white flex-1 flex flex-col justify-between gap-2.5 min-h-[110mm]'
+      }
       onDragOver={(e) => {
         if (isEditable) e.preventDefault();
       }}
@@ -128,53 +143,67 @@ export default function AttachmentPanel({
           type="button"
           disabled={uploading || photos.length >= 6}
           onClick={() => input.current?.click()}
-          className="w-full p-2.5 border border-dashed border-slate-300 hover:border-blue-400 hover:bg-blue-50/20 rounded-lg text-xs flex gap-2 items-center justify-center disabled:opacity-50 transition shrink-0"
+          className={`w-full min-h-[44px] p-2.5 border border-dashed rounded-xl text-xs font-medium flex gap-2 items-center justify-center disabled:opacity-50 transition shrink-0 ${
+            compactMobile
+              ? 'border-slate-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800'
+              : 'border-slate-300 hover:border-blue-400 hover:bg-blue-50/20 text-slate-800'
+          }`}
         >
-          <UploadCloud size={15} />
-          <span>Tambah foto / PDF</span>
-          <span className="text-slate-500">({photos.length}/6)</span>
+          <UploadCloud size={16} aria-hidden="true" />
+          <span>{compactMobile ? 'Ambil Foto / Pilih File PDF' : 'Tambah foto / PDF'}</span>
+          <span className="text-slate-500 dark:text-zinc-400">({photos.length}/6)</span>
         </button>
       )}
 
-      {uploading && <p role="status" className="text-xs text-blue-700 shrink-0">{progress}</p>}
-      {error && <p role="alert" className="text-xs text-red-700 shrink-0">{error}</p>}
+      {uploading && <p role="status" className="text-xs text-blue-700 dark:text-blue-400 shrink-0">{progress}</p>}
+      {error && <p role="alert" className="text-xs text-red-700 dark:text-red-400 shrink-0">{error}</p>}
 
       {!photos.length ? (
         <div
           onClick={() => isEditable && input.current?.click()}
           className={`flex-1 border-2 border-dashed ${
             isEditable
-              ? 'border-slate-300 hover:border-blue-400 hover:bg-blue-50/20 cursor-pointer'
-              : 'border-slate-200'
-          } rounded-xl flex flex-col items-center justify-center p-6 text-center transition min-h-[75mm]`}
+              ? compactMobile
+                ? 'border-slate-300 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800/40 cursor-pointer'
+                : 'border-slate-300 hover:border-blue-400 hover:bg-blue-50/20 cursor-pointer'
+              : 'border-slate-200 dark:border-zinc-800'
+          } rounded-xl flex flex-col items-center justify-center p-5 text-center transition ${
+            compactMobile ? 'min-h-[120px]' : 'min-h-[75mm]'
+          }`}
         >
-          <UploadCloud className="w-8 h-8 text-slate-400 mb-2" />
-          <span className="text-xs font-medium text-slate-700">
+          <UploadCloud className="w-7 h-7 text-slate-400 mb-2" aria-hidden="true" />
+          <span className={`text-xs font-medium ${compactMobile ? 'text-slate-700 dark:text-zinc-300' : 'text-slate-700'}`}>
             {isEditable
-              ? 'Tarik file ke sini atau tempel foto dengan Ctrl+V'
+              ? compactMobile
+                ? 'Ketuk untuk unggah foto dari kamera, galeri, atau file PDF'
+                : 'Tarik file ke sini atau tempel foto dengan Ctrl+V'
               : 'Belum ada lampiran.'}
           </span>
           {isEditable && (
-            <span className="text-[11px] text-slate-400 mt-1">
+            <span className="text-[11px] text-slate-500 dark:text-zinc-400 mt-1">
               Maksimal 6 file (Foto atau PDF), maks. 3,9 MB per file
             </span>
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 flex-1 content-start">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 flex-1 content-start">
           {photos.map((photo, i) => (
             <div
               key={photo.id}
-              className="rounded-lg border border-slate-200 p-2 min-w-0 bg-white shadow-sm flex flex-col justify-between"
+              className={`rounded-xl border p-2 min-w-0 shadow-sm flex flex-col justify-between ${
+                compactMobile
+                  ? 'border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950'
+                  : 'border-slate-200 bg-white'
+              }`}
             >
               <button
                 type="button"
                 onClick={() => setPreview(photo)}
-                className="w-full h-24 flex items-center justify-center bg-slate-50 rounded overflow-hidden"
+                className="w-full h-24 flex items-center justify-center bg-slate-100 dark:bg-zinc-900 rounded-lg overflow-hidden"
                 aria-label={`Pratinjau ${photo.name || photo.caption || `lampiran ${i + 1}`}`}
               >
                 {photo.type === 'application/pdf' ? (
-                  <FileText size={36} className="text-red-600" />
+                  <FileText size={36} className="text-red-600" aria-hidden="true" />
                 ) : (
                   <img
                     src={photo.url}
@@ -194,13 +223,18 @@ export default function AttachmentPanel({
                       )
                     )
                   }
-                  className="w-full text-[11px] mt-2 border rounded p-1"
+                  placeholder={`Lampiran ${i + 1}`}
+                  className={`w-full mt-2 border rounded-lg px-2 py-1.5 ${
+                    compactMobile
+                      ? 'text-xs min-h-[38px] bg-white dark:bg-zinc-900 border-slate-300 dark:border-zinc-700 text-slate-900 dark:text-white'
+                      : 'text-[11px] bg-white border-slate-200 text-slate-900'
+                  }`}
                 />
               ) : (
                 <p className="text-[11px] break-words mt-2 truncate">{photo.caption || photo.name}</p>
               )}
-              <div className="flex items-center justify-between mt-2 pt-1 border-t border-slate-100">
-                <span className="text-[10px] text-slate-500">
+              <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-slate-200/70 dark:border-zinc-800">
+                <span className="text-[10px] text-slate-500 dark:text-zinc-400">
                   {photo.type === 'application/pdf' ? 'PDF' : 'Foto'} {i + 1}
                 </span>
                 <div className="flex gap-1">
@@ -208,9 +242,9 @@ export default function AttachmentPanel({
                     type="button"
                     onClick={() => setPreview(photo)}
                     aria-label={`Buka lampiran ${i + 1}`}
-                    className="p-1 hover:bg-slate-100 rounded text-slate-600"
+                    className={`${compactMobile ? 'min-h-[36px] min-w-[36px]' : 'p-1'} flex items-center justify-center hover:bg-slate-200/60 dark:hover:bg-zinc-800 rounded-lg text-slate-600 dark:text-zinc-300`}
                   >
-                    <Eye size={14} />
+                    <Eye size={14} aria-hidden="true" />
                   </button>
                   {isEditable && (
                     <>
@@ -219,18 +253,18 @@ export default function AttachmentPanel({
                         disabled={i === 0 || uploading}
                         onClick={() => move(i, -1)}
                         aria-label={`Geser lampiran ${i + 1} ke kiri`}
-                        className="p-1 hover:bg-slate-100 rounded text-slate-600 disabled:opacity-20"
+                        className={`${compactMobile ? 'min-h-[36px] min-w-[36px]' : 'p-1'} flex items-center justify-center hover:bg-slate-200/60 dark:hover:bg-zinc-800 rounded-lg text-slate-600 dark:text-zinc-300 disabled:opacity-25`}
                       >
-                        <ArrowLeft size={14} />
+                        <ArrowLeft size={14} aria-hidden="true" />
                       </button>
                       <button
                         type="button"
                         disabled={i === photos.length - 1 || uploading}
                         onClick={() => move(i, 1)}
                         aria-label={`Geser lampiran ${i + 1} ke kanan`}
-                        className="p-1 hover:bg-slate-100 rounded text-slate-600 disabled:opacity-20"
+                        className={`${compactMobile ? 'min-h-[36px] min-w-[36px]' : 'p-1'} flex items-center justify-center hover:bg-slate-200/60 dark:hover:bg-zinc-800 rounded-lg text-slate-600 dark:text-zinc-300 disabled:opacity-25`}
                       >
-                        <ArrowRight size={14} />
+                        <ArrowRight size={14} aria-hidden="true" />
                       </button>
                       <button
                         type="button"
@@ -240,9 +274,9 @@ export default function AttachmentPanel({
                           onChange(photos.filter((p) => p.id !== photo.id));
                         }}
                         aria-label={`Lepas dan hapus lampiran ${i + 1}`}
-                        className="p-1 hover:bg-red-50 rounded text-red-700 hover:text-red-900 transition"
+                        className={`${compactMobile ? 'min-h-[36px] min-w-[36px]' : 'p-1'} flex items-center justify-center hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg text-red-700 dark:text-red-400 transition`}
                       >
-                        <X size={14} />
+                        <X size={14} aria-hidden="true" />
                       </button>
                     </>
                   )}
@@ -258,29 +292,29 @@ export default function AttachmentPanel({
           role="dialog"
           aria-modal="true"
           aria-label="Pratinjau lampiran"
-          className="fixed inset-0 z-50 bg-black/80 flex flex-col p-4"
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') setPreview(null);
-          }}
+          className="fixed inset-0 z-50 bg-black/85 flex flex-col p-4 pb-safe"
         >
-          <div className="flex justify-between items-center text-white mb-3">
-            <span>{preview.name || preview.caption || 'Lampiran'}</span>
+          <div className="flex justify-between items-center gap-3 text-white mb-3">
+            <span className="text-sm font-medium truncate">
+              {preview.name || preview.caption || 'Lampiran'}
+            </span>
             <button
               autoFocus
               type="button"
               onClick={() => setPreview(null)}
               aria-label="Tutup pratinjau"
+              className="min-h-[44px] min-w-[44px] rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center shrink-0"
             >
-              <X />
+              <X className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
           {preview.type === 'application/pdf' ? (
-            <iframe title={preview.name || 'PDF'} src={preview.url} className="w-full flex-1 bg-white" />
+            <iframe title={preview.name || 'PDF'} src={preview.url} className="w-full flex-1 bg-white rounded-xl" />
           ) : (
             <img
               src={preview.url}
               alt={preview.caption || 'Lampiran'}
-              className="w-full h-[85vh] object-contain"
+              className="w-full flex-1 min-h-0 object-contain"
             />
           )}
         </div>

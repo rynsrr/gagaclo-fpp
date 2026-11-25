@@ -6,7 +6,13 @@ import AttachmentPanel from './AttachmentPanel';
 
 import React, { useRef, useState, useEffect } from 'react';
 import { PurchaseRequisition, PurchaseItem, PurchaseJenis, PurchasePhoto } from '@/types/purchase';
-import { formatRupiah, formatShortDate, calculateItemAmount } from '@/lib/purchaseService';
+import {
+  formatRupiah,
+  formatShortDate,
+  calculateItemAmount,
+  getPurchaseReceiptStats,
+  todayInJakarta,
+} from '@/lib/purchaseService';
 import {
   getMasterItems,
   findMasterItem,
@@ -27,6 +33,7 @@ import {
   X,
   RefreshCw,
   Clipboard,
+  Ban,
 } from 'lucide-react';
 
 interface PurchaseDocumentProps {
@@ -34,6 +41,7 @@ interface PurchaseDocumentProps {
   onChange?: (updated: PurchaseRequisition) => void;
   onSave?: () => void;
   onGenerateNomor?: () => void;
+  onToggleCancel?: () => void;
   saveNotice?: string | null;
   hidePrintControls?: boolean;
   isEditable?: boolean;
@@ -45,6 +53,7 @@ export default function PurchaseDocument({
   onChange,
   onSave,
   onGenerateNomor,
+  onToggleCancel,
   saveNotice = null,
   hidePrintControls = false,
   isEditable = true,
@@ -459,9 +468,39 @@ export default function PurchaseDocument({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onSave]);
 
+  // Toggle per-item received status (screen-only checklist, does not alter A4 print layout)
+  const handleToggleItemReceived = (index: number) => {
+    if (!onChange || !isEditable) return;
+    const current = dataRef.current;
+    const updatedItems = [...current.items];
+    const nextReceived = !updatedItems[index]?.diterima;
+    updatedItems[index] = {
+      ...updatedItems[index],
+      diterima: nextReceived,
+      tanggalDiterimaItem: nextReceived ? todayInJakarta() : '',
+    };
+
+    const named = updatedItems.filter((it) => Boolean(it.namaBarang?.trim()));
+    const tracked = named.length > 0 ? named : updatedItems;
+    const allReceived = tracked.length > 0 && tracked.every((it) => Boolean(it.diterima));
+    const nextTanggalDiterima = allReceived
+      ? current.tanggalDiterima || todayInJakarta()
+      : nextReceived
+      ? current.tanggalDiterima
+      : '';
+
+    onChange({
+      ...current,
+      items: updatedItems,
+      tanggalDiterima: nextTanggalDiterima,
+    });
+  };
+
   // Proportions: 3 rows minimum
   const totalDisplayRows = Math.max(items.length, 3);
   const fillerRowsCount = Math.max(0, totalDisplayRows - items.length);
+  const receiptStats = getPurchaseReceiptStats(data);
+  const isCancelled = data.status === 'Dibatalkan';
 
   const photoCount = photos.filter(photo => !photo.type || photo.type.startsWith('image/')).length;
 
@@ -490,8 +529,28 @@ export default function PurchaseDocument({
         ))}
       </datalist>
       {/* Top Action Toolbar (Hidden during print) */}
-      {!hidePrintControls && (saveNotice || pasteNotice) && (
+      {!hidePrintControls && (saveNotice || pasteNotice || isCancelled) && (
         <div className="no-print w-full max-w-[210mm] mb-4 space-y-2">
+          {isCancelled && (
+            <div className="flex items-center justify-between gap-2 p-2.5 bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-800 text-red-900 dark:text-red-200 text-xs rounded-xl">
+              <div className="flex items-center gap-2">
+                <Ban className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" aria-hidden="true" />
+                <span>
+                  Formulir <strong>{nomor || 'ini'}</strong> berstatus <strong>Dibatalkan</strong>.
+                </span>
+              </div>
+              {isEditable && onToggleCancel && (
+                <button
+                  type="button"
+                  onClick={onToggleCancel}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 font-semibold hover:bg-red-50 transition shrink-0"
+                >
+                  <RotateCcw className="w-3 h-3" aria-hidden="true" />
+                  <span>Aktifkan Kembali</span>
+                </button>
+              )}
+            </div>
+          )}
           {saveNotice && (
             <div className="flex items-center space-x-2 p-3 bg-emerald-950/70 border border-emerald-500/50 text-emerald-200 text-xs sm:text-sm rounded-xl animate-in fade-in duration-300">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
@@ -700,9 +759,24 @@ export default function PurchaseDocument({
                 {/* Actual Items */}
                 {items.map((item, index) => (
                   <tr key={item.id || index} className="align-middle border-b border-black/10 group h-6">
-                    {/* No */}
+                    {/* No + screen-only received checklist */}
                     <td className="border-r border-black px-1 py-0.5 text-center font-normal">
-                      {index + 1}
+                      <div className="flex items-center justify-center gap-0.5">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(item.diterima)}
+                          disabled={!isEditable}
+                          onChange={() => handleToggleItemReceived(index)}
+                          aria-label={`Tandai barang ${index + 1} sudah diterima`}
+                          title={
+                            item.diterima
+                              ? `Sudah diterima${item.tanggalDiterimaItem ? ` (${formatShortDate(item.tanggalDiterimaItem)})` : ''}`
+                              : 'Centang jika barang ini sudah diterima'
+                          }
+                          className="no-print w-3 h-3 accent-emerald-600 rounded shrink-0"
+                        />
+                        <span>{index + 1}</span>
+                      </div>
                     </td>
 
                     {/* Nama Barang */}
@@ -899,8 +973,8 @@ export default function PurchaseDocument({
                   <Plus className="w-3.5 h-3.5" />
                   <span>Tambah Baris Barang</span>
                 </button>
-                <span className="text-[10px] text-gray-400 italic">
-                  Total {items.length} barang &bull; Taksiran: {formatRupiah(data.totalTaksiran || 0)}
+                <span className="text-[10px] text-gray-500">
+                  Total {items.length} barang &bull; Diterima: <strong>{receiptStats.receivedItems}/{receiptStats.totalItems}</strong> &bull; Taksiran: {formatRupiah(data.totalTaksiran || 0)}
                 </span>
               </div>
             )}

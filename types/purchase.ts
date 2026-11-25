@@ -1,6 +1,13 @@
 export type PurchaseJenis = '' | 'Rutin' | 'Non Rutin' | 'Segera';
 
-export type PurchaseStatus = 'Draft' | 'Diajukan' | 'Diketahui' | 'Disetujui' | 'Diterima' | 'Selesai';
+export type PurchaseStatus =
+  | 'Draft'
+  | 'Diajukan'
+  | 'Diketahui'
+  | 'Disetujui'
+  | 'Diterima'
+  | 'Selesai'
+  | 'Dibatalkan';
 
 export interface PurchaseItem {
   id: string;
@@ -12,6 +19,8 @@ export interface PurchaseItem {
   hargaSatuan: number;
   jumlah: number;
   supplier: string;
+  diterima?: boolean;
+  tanggalDiterimaItem?: string;
 }
 
 export interface PurchasePhoto {

@@ -10,7 +10,7 @@ import {
   CheckCircle2,
   AlertCircle,
   ArrowLeft,
-  Sparkles,
+  LogOut,
 } from 'lucide-react';
 import {
   getUsers,
@@ -78,6 +78,15 @@ export default function PasswordModal({
     }
   }, [isOpen, initialTab]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   // Langsung pilih user dengan 1 klik (tanpa password)
@@ -142,9 +151,14 @@ export default function PasswordModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div
-        className="w-full max-w-md rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-2xl text-zinc-900 dark:text-white space-y-4 relative"
+        className="w-full max-w-md max-h-[90dvh] overflow-y-auto rounded-t-2xl sm:rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 sm:p-6 pb-safe shadow-2xl text-zinc-900 dark:text-white space-y-4 relative"
         role="dialog"
         aria-modal="true"
         aria-labelledby="user-modal-title"
@@ -153,28 +167,28 @@ export default function PasswordModal({
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-white transition"
+          className="absolute right-3 top-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-zinc-400 hover:text-zinc-700 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
           aria-label="Tutup"
         >
-          <X className="w-5 h-5" />
+          <X className="w-5 h-5" aria-hidden="true" />
         </button>
 
         {/* Modal Tabs Header */}
-        <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-3 pr-8">
-          <div className="flex items-center space-x-2">
+        <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-3 pr-12">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => {
                 setActiveTab('SELECT');
                 setManageNotice(null);
               }}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+              className={`min-h-[40px] flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
                 activeTab === 'SELECT'
-                  ? 'bg-blue-600 text-white shadow-sm'
+                  ? 'bg-slate-900 dark:bg-white text-white dark:text-black shadow-sm'
                   : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800'
               }`}
             >
-              <UserCheck className="w-3.5 h-3.5" />
+              <UserCheck className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Pilih Akun ({userList.length})</span>
             </button>
             <button
@@ -183,13 +197,13 @@ export default function PasswordModal({
                 setActiveTab('MANAGE');
                 setTimeout(() => newUserInputRef.current?.focus(), 50);
               }}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+              className={`min-h-[40px] flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
                 activeTab === 'MANAGE'
-                  ? 'bg-blue-600 text-white shadow-sm'
+                  ? 'bg-slate-900 dark:bg-white text-white dark:text-black shadow-sm'
                   : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800'
               }`}
             >
-              <Users className="w-3.5 h-3.5" />
+              <Users className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Kelola User</span>
             </button>
           </div>
@@ -200,11 +214,11 @@ export default function PasswordModal({
           <div className="space-y-4">
             <div>
               <h2 id="user-modal-title" className="text-base font-semibold flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-500" />
+                <UserCheck className="w-4 h-4 text-slate-600 dark:text-zinc-300" aria-hidden="true" />
                 <span>Pilih Akun Anda</span>
               </h2>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                Klik salah satu nama di bawah untuk langsung mengedit dokumen FPP. Tidak memerlukan password.
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                Ketuk salah satu nama di bawah untuk langsung mengedit dokumen FPP.
               </p>
             </div>
 
@@ -258,22 +272,37 @@ export default function PasswordModal({
               </button>
             </div>
 
-            <div className="flex items-center justify-between pt-2 border-t border-zinc-200 dark:border-zinc-800 text-xs">
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveTab('MANAGE');
-                  setTimeout(() => newUserInputRef.current?.focus(), 50);
-                }}
-                className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-medium"
-              >
-                <Users className="w-3.5 h-3.5" />
-                <span>Kelola / Hapus User</span>
-              </button>
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-zinc-200 dark:border-zinc-800 text-xs">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('MANAGE');
+                    setTimeout(() => newUserInputRef.current?.focus(), 50);
+                  }}
+                  className="min-h-[40px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-medium"
+                >
+                  <Users className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>Kelola User</span>
+                </button>
+                {activeUser && onLogout && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onLogout();
+                      onClose();
+                    }}
+                    className="min-h-[40px] text-red-600 dark:text-red-400 hover:underline flex items-center gap-1 font-medium"
+                  >
+                    <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
+                    <span>Keluar Mode Edit</span>
+                  </button>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={onClose}
-                className="px-3.5 py-1.5 text-zinc-500 hover:text-zinc-800 dark:hover:text-white rounded-lg transition"
+                className="min-h-[40px] px-3.5 py-1.5 text-zinc-500 hover:text-zinc-800 dark:hover:text-white rounded-lg transition"
               >
                 Batal
               </button>

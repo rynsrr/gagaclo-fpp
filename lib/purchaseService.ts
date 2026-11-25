@@ -327,3 +327,41 @@ export function calculateItemAmount(quantity: string, price: number): number {
   const count = match ? Number(match[1].replace(',', '.')) : 0;
   return Math.round(Math.max(0, count) * Math.max(0, Number(price) || 0));
 }
+
+
+export type PurchaseReceiptState = 'cancelled' | 'complete' | 'partial' | 'pending';
+
+export function getPurchaseReceiptStats(purchase: PurchaseRequisition): {
+  state: PurchaseReceiptState;
+  receivedItems: number;
+  totalItems: number;
+} {
+  const rawItems = Array.isArray(purchase.items) ? purchase.items : [];
+  const namedItems = rawItems.filter((item) => Boolean(item.namaBarang?.trim()));
+  const trackedItems = namedItems.length > 0 ? namedItems : rawItems;
+  const totalItems = trackedItems.length;
+  const checkedItems = trackedItems.filter((item) => Boolean(item.diterima)).length;
+
+  if (purchase.status === 'Dibatalkan') {
+    return { state: 'cancelled', receivedItems: checkedItems, totalItems };
+  }
+
+  const legacyComplete =
+    Boolean(purchase.tanggalDiterima?.trim()) ||
+    purchase.status === 'Diterima' ||
+    purchase.status === 'Selesai';
+
+  if (totalItems > 0 && checkedItems >= totalItems) {
+    return { state: 'complete', receivedItems: totalItems, totalItems };
+  }
+
+  if (checkedItems > 0) {
+    return { state: 'partial', receivedItems: checkedItems, totalItems };
+  }
+
+  if (legacyComplete) {
+    return { state: 'complete', receivedItems: totalItems, totalItems };
+  }
+
+  return { state: 'pending', receivedItems: 0, totalItems };
+}
